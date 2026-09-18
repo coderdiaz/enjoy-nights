@@ -16,13 +16,15 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
   * Increased buff duration from 80s to **90 seconds (1800 ticks)**.
   * Added a **180-second (3 minutes) cooldown** between bed rests (`bedRestCooldownSeconds = 180`).
   * If a player attempts to sleep before 180s have passed, the bed prevents sleeping and displays an action bar message showing the remaining cooldown time.
-* **Universal Blood Moon Visuals & Complementary Unbound Support:**
-  * Uses Mojang's native `RenderPipelines.VIGNETTE` with official `textures/misc/vignette.png` and multiplicative color subtraction (`Dst * (1 - Src)`), completely eliminating vertical seams, rectangular cuts, and washed-out screen veils.
-  * The center of the screen remains 100% crystal clear, while screen borders and corners receive a smooth, cinematic dark-crimson vignette.
-  * Added dynamic runtime detection for **Complementary Unbound** shaders via Iris (`ShaderDetectionHelper`): automatically applies a calibrated, softer vignette balance (`bloodMoonComplementarySpecific = true`) that seamlessly complements Complementary's tonemap and lighting.
-  * Configurable vignette intensity (`bloodMoonVignetteIntensity = 0.70`, range 0.1 to 1.0) and toggle in `enjoy_nights-client.toml`.
-  * Added dense red fog plane adjustment for vanilla/non-shader setups.
-  * Added floating crimson ember spores (`CRIMSON_SPORE`) around players during Blood Moon nights (which bloom into glowing red embers with Complementary's particle bloom!).
+* **Atmospheric Blood Moon Terror (Universal & Shader-Compatible):**
+  * **Pulsing Blood Vignette Overhaul:** Replaced screen-darkening blend with a dedicated 512x512 smooth radial alpha texture rendered via `RenderPipelines.GUI_TEXTURED`. The center crosshair view remains 100% clear and unobstructed, while the outer perimeter pulses with a vivid, deep crimson heartbeat wave that is clearly visible against pitch-black skies even when using high-contrast shaders like **Complementary Unbound**.
+  * **Continuous Basalt Deltas Ambient Loop:** Blood Moon nights now immerse the player with the low, oppressive volcanic rumble of the Nether Basalt Deltas (`SoundEvents.AMBIENT_BASALT_DELTAS_LOOP`), complete with smooth 2-second fade-in and fade-out transitions.
+  * **Ambient Nether Spore Atmosphere:** Ethereal floating cobalt motes (`WARPED_SPORE` as in the Warped Forest), blood-red motes (`CRIMSON_SPORE`), subtle dark falling ash (`ASH`), and ground mist wisps (`SMOKE`).
+  * **Paced Psychological Horror & Phantom Creeper Fuse:** Sporadic horror sound cues now trigger at spaced-out, suspenseful intervals of **45 to 80 seconds** (preventing sound repetition/fatigue). Added faint **Creeper primed fuse hisses** (`SoundEvents.CREEPER_PRIMED`) directly behind or near the player to induce real paranoia.
+  * **Sporadic Darkness Pulses (Warden Jump-Flicker):** Outdoors players experience a sudden, brief 1.75s darkness pulse (`bloodMoonDarknessPulseEnabled`) every 2 to 3 minutes accompanied by a heavy Warden heartbeat thump, providing a sudden jolt without causing continuous blindness.
+  * **Shader-Native Blood-Red Sky & Natural Lighting:** Dynamically overrides `EnvironmentAttributes.SKY_COLOR` on the client during Blood Moon, enabling shaders like **Complementary Unbound** to render spectacular crimson clouds and sky while keeping terrain lighting completely natural and clear (no pitch-black terrain, retaining authentic clean vanilla nighttime visibility).
+  * **Rushing Phantom Footsteps:** When players pause walking, mine blocks, or gather items, 2 to 3 rapid footsteps (`bloodMoonPhantomFootstepsEnabled`) rush right behind their back (spaced by ~0.3s and closing in by 0.5 blocks per step), perfectly matching the material of the floor (wood, grass, stone).
+  * **Cinematic Nightfall Announcement:** Starting the Blood Moon triggers a dramatic Souls-like on-screen title banner (*"THE BLOOD MOON RISES — The siege has begun. Seek shelter."*) accompanied by a deep rumble and tolling bell.
 
 ---
 

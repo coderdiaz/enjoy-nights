@@ -3,6 +3,8 @@
   "enjoy_nights.bed.rest_title": "Rested & Ready",
   "enjoy_nights.bed.cooldown": "You are not tired enough to rest yet! (Wait %ss)",
   "enjoy_nights.bloodmoon.warning": "The Blood Moon rises... The siege begins!",
+  "enjoy_nights.bloodmoon.title": "THE BLOOD MOON RISES",
+  "enjoy_nights.bloodmoon.subtitle": "The siege has begun. Seek shelter.",
   "enjoy_nights.bloodmoon.ended": "The Blood Moon has set. The siege is over.",
   "enjoy_nights.paranoia.whisper": "You feel an eerie presence lurking in the dark..."
 }

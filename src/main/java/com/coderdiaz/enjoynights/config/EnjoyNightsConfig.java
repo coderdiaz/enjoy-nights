@@ -29,6 +29,7 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue bloodMoonSiegeWavesEnabled;
         public final ModConfigSpec.IntValue bloodMoonMaxNearbyMobs;
         public final ModConfigSpec.IntValue bloodMoonWaveIntervalSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonDarknessPulseEnabled;
 
         public Server(ModConfigSpec.Builder builder) {
             builder.comment("Server-side configurations for Enjoy Nights!").push("server");
@@ -129,6 +130,10 @@ public class EnjoyNightsConfig {
             bloodMoonWaveIntervalSeconds = builder
                     .comment("Seconds between siege wave checks around players during Blood Moon (default: 30s)")
                     .defineInRange("bloodMoonWaveIntervalSeconds", 30, 10, 300);
+
+            bloodMoonDarknessPulseEnabled = builder
+                    .comment("Whether players outdoors during a Blood Moon experience sudden sporadic 1.75-second darkness pulses and Warden heartbeats every 2-3 minutes to unnerve the player")
+                    .define("bloodMoonDarknessPulseEnabled", true);
             builder.pop();
 
             builder.pop();
@@ -142,6 +147,7 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue bloodMoonComplementarySpecific;
         public final ModConfigSpec.BooleanValue bloodMoonParticles;
         public final ModConfigSpec.BooleanValue paranoiaSoundsEnabled;
+        public final ModConfigSpec.BooleanValue bloodMoonPhantomFootstepsEnabled;
 
         public Client(ModConfigSpec.Builder builder) {
             builder.comment("Client-side configurations for Enjoy Nights!").push("client");
@@ -169,6 +175,10 @@ public class EnjoyNightsConfig {
             paranoiaSoundsEnabled = builder
                     .comment("Play disturbing hallucinations and ambient sounds when paranoia is triggered")
                     .define("paranoiaSoundsEnabled", true);
+
+            bloodMoonPhantomFootstepsEnabled = builder
+                    .comment("Whether players experience phantom footsteps rushing behind them when they stop or mine during a Blood Moon")
+                    .define("bloodMoonPhantomFootstepsEnabled", true);
 
             builder.pop();
         }
