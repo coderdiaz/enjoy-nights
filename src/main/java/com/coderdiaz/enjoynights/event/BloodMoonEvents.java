@@ -19,15 +19,22 @@ import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.level.LightLayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BloodMoonEvents {
     private static boolean bloodMoonAnnounced = false;
     private static int siegeWaveTickCounter = 0;
+    private static final Map<UUID, Integer> DARKNESS_PULSE_COOLDOWNS = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
@@ -80,6 +87,68 @@ public class BloodMoonEvents {
         } else {
             siegeWaveTickCounter = 0;
         }
+
+        // Sporadic atmospheric Darkness pulse (torches flicker and darkness closes in for ~1.5s every 2-3 minutes to unnerve player)
+        if (isBloodMoon && EnjoyNightsConfig.SERVER.bloodMoonDarknessPulseEnabled.get()) {
+            if (level.getGameTime() % 20 == 0) {
+                for (ServerPlayer player : level.players()) {
+                    if (player.isSpectator() || !player.isAlive()) {
+                        continue;
+                    }
+
+                    BlockPos pos = player.blockPosition();
+                    int highestBlock = level.getHeight(Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ());
+                    boolean isOutdoors = level.canSeeSky(pos)
+                            || level.canSeeSky(pos.above())
+                            || pos.getY() >= highestBlock - 3
+                            || level.getBrightness(LightLayer.SKY, pos) >= 5;
+
+                    UUID uuid = player.getUUID();
+                    // Initial pulse starts quickly (15-25s) so the player notices it right away upon event start / testing,
+                    // and then follows the 2 to 3 minute (120 to 180s) interval.
+                    int cooldown = DARKNESS_PULSE_COOLDOWNS.computeIfAbsent(
+                            uuid,
+                            k -> (15 + level.getRandom().nextInt(10)) * 20
+                    );
+
+                    cooldown -= 20;
+                    if (cooldown <= 0) {
+                        if (isOutdoors) {
+                            // Apply Darkness effect: 50 ticks (2.5s total: ~1s blend-in, ~0.8s peak blackout, ~0.7s blend-out)
+                            // Sudden visual flicker: torches dim and peripheral vision is swallowed by darkness
+                            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 50, 0, false, false, false));
+
+                            level.playSound(
+                                    null,
+                                    player.getX(),
+                                    player.getY(),
+                                    player.getZ(),
+                                    SoundEvents.WARDEN_HEARTBEAT,
+                                    SoundSource.AMBIENT,
+                                    0.85F,
+                                    0.65F
+                            );
+
+                            // Reset cooldown: 120 to 180 seconds (2 to 3 minutes)
+                            cooldown = (120 + level.getRandom().nextInt(60)) * 20;
+                        } else {
+                            // If player is indoors, hold at 0 so it immediately strikes when stepping outdoors
+                            cooldown = 0;
+                        }
+                    }
+                    DARKNESS_PULSE_COOLDOWNS.put(uuid, cooldown);
+                }
+            }
+        } else if (!isBloodMoon) {
+            if (!DARKNESS_PULSE_COOLDOWNS.isEmpty()) {
+                DARKNESS_PULSE_COOLDOWNS.clear();
+            }
+            for (ServerPlayer player : level.players()) {
+                if (player.hasEffect(MobEffects.DARKNESS)) {
+                    player.removeEffect(MobEffects.DARKNESS);
+                }
+            }
+        }
     }
 
     private static void spawnControlledSiegeWave(ServerLevel level) {
@@ -130,11 +199,19 @@ public class BloodMoonEvents {
     }
 
     private static void announceBloodMoonStart(ServerLevel level) {
-        Component message = Component.translatable("enjoy_nights.bloodmoon.warning")
+        Component title = Component.translatable("enjoy_nights.bloodmoon.title")
                 .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD);
+        Component subtitle = Component.translatable("enjoy_nights.bloodmoon.subtitle")
+                .withStyle(ChatFormatting.RED, ChatFormatting.ITALIC);
 
         for (ServerPlayer player : level.players()) {
-            player.sendSystemMessage(message);
+            player.sendSystemMessage(title.copy().append(" — ").append(subtitle));
+
+            // Cinematic on-screen title (Dark Souls / Bloodborne style)
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(20, 100, 30));
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(title));
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket(subtitle));
+
             level.playSound(
                     null,
                     player.getX(),
@@ -143,7 +220,17 @@ public class BloodMoonEvents {
                     SoundEvents.WITHER_SPAWN,
                     SoundSource.AMBIENT,
                     1.0f,
-                    0.6f
+                    0.5f // deep, menacing rumble
+            );
+            level.playSound(
+                    null,
+                    player.getX(),
+                    player.getY(),
+                    player.getZ(),
+                    SoundEvents.BELL_RESONATE,
+                    SoundSource.AMBIENT,
+                    1.2f,
+                    0.45f // heavy, haunting tolling bell
             );
         }
     }

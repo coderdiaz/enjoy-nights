@@ -72,7 +72,24 @@ public class LunarPhaseEvents {
             // Higher chance to spawn with buffs (75% on Blood Moon, 50% on Full Moon)
             float buffChance = isBloodMoon ? 0.75f : 0.50f;
 
-            if (random.nextFloat() < buffChance) {
+            if (monster instanceof net.minecraft.world.entity.monster.Creeper creeper) {
+                // Do NOT give potion effects to creepers to avoid lingering AreaEffectCloud exploit on explosion
+                double chargedChance = isBloodMoon ?
+                        EnjoyNightsConfig.SERVER.bloodMoonChargedCreeperChance.get() :
+                        EnjoyNightsConfig.SERVER.fullMoonChargedCreeperChance.get();
+
+                if (random.nextFloat() < chargedChance) {
+                    com.coderdiaz.enjoynights.util.CreeperHelper.setPowered(creeper, true);
+                }
+
+                // Agility speed increase directly through attributes (no potion clouds)
+                AttributeInstance speedAttr = creeper.getAttribute(Attributes.MOVEMENT_SPEED);
+                if (speedAttr != null) {
+                    speedAttr.setBaseValue(speedAttr.getBaseValue() * 1.15);
+                }
+
+                creeper.addTag(TAG_POWERED_MOB);
+            } else if (random.nextFloat() < buffChance) {
                 // Add Strength
                 monster.addEffect(new MobEffectInstance(MobEffects.STRENGTH, -1, isBloodMoon ? 1 : 0, false, true, true));
 

@@ -4,9 +4,33 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
+## [1.1.0] - 2026-09-18
+
+### 🚀 Features & Balance
+* **Creeper Potion Cloud Fix & Charged Creepers:**
+  * Creepers no longer receive potion effects (eliminating the lingering `AreaEffectCloud` explosion exploit where players could obtain permanent Strength/Speed).
+  * Added chance for Creepers to spawn as **Charged Creepers** under lunar events: **5%** on Full Moon (`fullMoonChargedCreeperChance = 0.05`) and **25%** on Blood Moon (`bloodMoonChargedCreeperChance = 0.25`) to prevent excessive terrain destruction.
+  * Normal boosted Creepers receive agility improvements directly via attribute modifier (+15% movement speed) without potion particles.
+* **Bed Recovery Station Rebalance & Fair Play Cooldown:**
+  * Streamlined recovery buffs: removed Speed I and Absorption II; now grants **Regeneration II**, **Resistance I**, and instant **Saturation**.
+  * Increased buff duration from 80s to **90 seconds (1800 ticks)**.
+  * Added a **180-second (3 minutes) cooldown** between bed rests (`bedRestCooldownSeconds = 180`).
+  * If a player attempts to sleep before 180s have passed, the bed prevents sleeping and displays an action bar message showing the remaining cooldown time.
+* **Atmospheric Blood Moon Terror (Universal & Shader-Compatible):**
+  * **Pulsing Blood Vignette Overhaul:** Replaced screen-darkening blend with a dedicated 512x512 smooth radial alpha texture rendered via `RenderPipelines.GUI_TEXTURED`. The center crosshair view remains 100% clear and unobstructed, while the outer perimeter pulses with a vivid, deep crimson heartbeat wave that is clearly visible against pitch-black skies even when using high-contrast shaders like **Complementary Unbound**.
+  * **Continuous Basalt Deltas Ambient Loop:** Blood Moon nights now immerse the player with the low, oppressive volcanic rumble of the Nether Basalt Deltas (`SoundEvents.AMBIENT_BASALT_DELTAS_LOOP`), complete with smooth 2-second fade-in and fade-out transitions.
+  * **Ambient Nether Spore Atmosphere:** Ethereal floating cobalt motes (`WARPED_SPORE` as in the Warped Forest), blood-red motes (`CRIMSON_SPORE`), subtle dark falling ash (`ASH`), and ground mist wisps (`SMOKE`).
+  * **Paced Psychological Horror & Phantom Creeper Fuse:** Sporadic horror sound cues now trigger at spaced-out, suspenseful intervals of **45 to 80 seconds** (preventing sound repetition/fatigue). Added faint **Creeper primed fuse hisses** (`SoundEvents.CREEPER_PRIMED`) directly behind or near the player to induce real paranoia.
+  * **Sporadic Darkness Pulses (Warden Jump-Flicker):** Outdoors players experience a sudden, brief 1.75s darkness pulse (`bloodMoonDarknessPulseEnabled`) every 2 to 3 minutes accompanied by a heavy Warden heartbeat thump, providing a sudden jolt without causing continuous blindness.
+  * **Shader-Native Blood-Red Sky & Natural Lighting:** Dynamically overrides `EnvironmentAttributes.SKY_COLOR` on the client during Blood Moon, enabling shaders like **Complementary Unbound** to render spectacular crimson clouds and sky while keeping terrain lighting completely natural and clear (no pitch-black terrain, retaining authentic clean vanilla nighttime visibility).
+  * **Rushing Phantom Footsteps:** When players pause walking, mine blocks, or gather items, 2 to 3 rapid footsteps (`bloodMoonPhantomFootstepsEnabled`) rush right behind their back (spaced by ~0.3s and closing in by 0.5 blocks per step), perfectly matching the material of the floor (wood, grass, stone).
+  * **Cinematic Nightfall Announcement:** Starting the Blood Moon triggers a dramatic Souls-like on-screen title banner (*"THE BLOOD MOON RISES — The siege has begun. Seek shelter."*) accompanied by a deep rumble and tolling bell.
+
+---
+
 ## [1.0.0] - 2026-09-18
 
-### 🚀 Features (Nuevas Características)
+### 🚀 Features
 * **Beds as Tactical Recovery Stations (No Night Skip):**
   * Sleeping in beds no longer skips time to morning.
   * Players rest for exactly 10 seconds before being automatically woken up.
@@ -34,7 +58,7 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
-### 🐛 Fixes & AI Improvements (Correcciones y Mejoras de IA)
+### 🐛 Fixes & AI Improvements
 * **Intelligent Barrier Detection (Anti-Mountain Fix):**
   * Fixed an issue where zombies attacked natural hillside/mountain dirt steps instead of pathfinding up slopes.
   * Added logic verifying that jumpable 1-block terrain steps are ignored so mobs maintain full pursuit speed up hills.
@@ -49,7 +73,7 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
-### ⚠️ Breaking Changes & Vanilla Overrides (Cambios en Mecánicas Vanilla)
+### ⚠️ Breaking Changes & Vanilla Overrides
 * **Vanilla Daylight Skipping Disabled:**
   * Beds can no longer be used by players to skip the night or thunderstorm cycles. All players will wake up after 10 seconds into the ongoing night.
 * **Phantom Mechanics Overridden:**

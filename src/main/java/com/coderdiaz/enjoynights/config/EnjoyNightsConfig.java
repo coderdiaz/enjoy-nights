@@ -8,12 +8,15 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue preventNightSkip;
         public final ModConfigSpec.IntValue bedSleepDurationSeconds;
         public final ModConfigSpec.IntValue bedBuffDurationSeconds;
+        public final ModConfigSpec.IntValue bedRestCooldownSeconds;
         public final ModConfigSpec.BooleanValue preventPhantoms;
         public final ModConfigSpec.DoubleValue fullMoonDiamondDropChance;
         public final ModConfigSpec.BooleanValue fullMoonExtraDropsEnabled;
         public final ModConfigSpec.DoubleValue newMoonStealthFactor;
         public final ModConfigSpec.BooleanValue fullMoonMobBuffsEnabled;
         public final ModConfigSpec.IntValue fullMoonExperienceMultiplier;
+        public final ModConfigSpec.DoubleValue fullMoonChargedCreeperChance;
+        public final ModConfigSpec.DoubleValue bloodMoonChargedCreeperChance;
         public final ModConfigSpec.IntValue paranoiaDurationSeconds;
         public final ModConfigSpec.BooleanValue paranoiaWeaknessEnabled;
 
@@ -26,6 +29,7 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue bloodMoonSiegeWavesEnabled;
         public final ModConfigSpec.IntValue bloodMoonMaxNearbyMobs;
         public final ModConfigSpec.IntValue bloodMoonWaveIntervalSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonDarknessPulseEnabled;
 
         public Server(ModConfigSpec.Builder builder) {
             builder.comment("Server-side configurations for Enjoy Nights!").push("server");
@@ -40,8 +44,12 @@ public class EnjoyNightsConfig {
                     .defineInRange("bedSleepDurationSeconds", 10, 3, 60);
 
             bedBuffDurationSeconds = builder
-                    .comment("Duration in seconds of the recovery and stamina buffs granted after sleeping in bed (default: 80s = 1m 20s)")
-                    .defineInRange("bedBuffDurationSeconds", 80, 10, 600);
+                    .comment("Duration in seconds of the recovery and stamina buffs granted after sleeping in bed (default: 90s)")
+                    .defineInRange("bedBuffDurationSeconds", 90, 10, 600);
+
+            bedRestCooldownSeconds = builder
+                    .comment("Cooldown in seconds before a player can rest in bed again to receive buffs (default: 180s = 3 minutes)")
+                    .defineInRange("bedRestCooldownSeconds", 180, 10, 1200);
             builder.pop();
 
             builder.push("phantoms");
@@ -70,6 +78,14 @@ public class EnjoyNightsConfig {
             fullMoonExperienceMultiplier = builder
                     .comment("Experience multiplier when defeating powered monsters under a Full Moon or Blood Moon")
                     .defineInRange("fullMoonExperienceMultiplier", 3, 1, 10);
+
+            fullMoonChargedCreeperChance = builder
+                    .comment("Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers during a Full Moon (default: 0.05 = 5%)")
+                    .defineInRange("fullMoonChargedCreeperChance", 0.05, 0.0, 1.0);
+
+            bloodMoonChargedCreeperChance = builder
+                    .comment("Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers during a Blood Moon (default: 0.25 = 25%)")
+                    .defineInRange("bloodMoonChargedCreeperChance", 0.25, 0.0, 1.0);
             builder.pop();
 
             builder.push("paranoia");
@@ -114,6 +130,10 @@ public class EnjoyNightsConfig {
             bloodMoonWaveIntervalSeconds = builder
                     .comment("Seconds between siege wave checks around players during Blood Moon (default: 30s)")
                     .defineInRange("bloodMoonWaveIntervalSeconds", 30, 10, 300);
+
+            bloodMoonDarknessPulseEnabled = builder
+                    .comment("Whether players outdoors during a Blood Moon experience sudden sporadic 1.75-second darkness pulses and Warden heartbeats every 2-3 minutes to unnerve the player")
+                    .define("bloodMoonDarknessPulseEnabled", true);
             builder.pop();
 
             builder.pop();
@@ -122,18 +142,48 @@ public class EnjoyNightsConfig {
 
     public static class Client {
         public final ModConfigSpec.BooleanValue bloodMoonFogTint;
+        public final ModConfigSpec.BooleanValue bloodMoonScreenVignette;
+        public final ModConfigSpec.DoubleValue bloodMoonVignetteIntensity;
+        public final ModConfigSpec.BooleanValue bloodMoonComplementarySpecific;
+        public final ModConfigSpec.BooleanValue bloodMoonParticles;
         public final ModConfigSpec.BooleanValue paranoiaSoundsEnabled;
+        public final ModConfigSpec.BooleanValue bloodMoonPhantomFootstepsEnabled;
+        public final ModConfigSpec.DoubleValue bloodMoonShaderAtmosphereIntensity;
 
         public Client(ModConfigSpec.Builder builder) {
             builder.comment("Client-side configurations for Enjoy Nights!").push("client");
 
             bloodMoonFogTint = builder
-                    .comment("Tint the atmosphere and fog blood-red during a Blood Moon night")
+                    .comment("Tint the vanilla atmosphere and fog blood-red during a Blood Moon night")
                     .define("bloodMoonFogTint", true);
+
+            bloodMoonScreenVignette = builder
+                    .comment("Display a smooth, circular dark-crimson vignette overlay on screen during Blood Moon")
+                    .define("bloodMoonScreenVignette", true);
+
+            bloodMoonVignetteIntensity = builder
+                    .comment("Intensity of the blood-red vignette on screen edges during Blood Moon (0.1 to 1.0, default: 0.70)")
+                    .defineInRange("bloodMoonVignetteIntensity", 0.70, 0.1, 1.0);
+
+            bloodMoonComplementarySpecific = builder
+                    .comment("Whether to automatically apply an optimized softer vignette balance when Complementary Unbound shader is detected")
+                    .define("bloodMoonComplementarySpecific", true);
+
+            bloodMoonParticles = builder
+                    .comment("Spawn ambient crimson ember spores floating around the player during Blood Moon nights")
+                    .define("bloodMoonParticles", true);
 
             paranoiaSoundsEnabled = builder
                     .comment("Play disturbing hallucinations and ambient sounds when paranoia is triggered")
                     .define("paranoiaSoundsEnabled", true);
+
+            bloodMoonPhantomFootstepsEnabled = builder
+                    .comment("Whether players experience phantom footsteps rushing behind them when they stop or mine during a Blood Moon")
+                    .define("bloodMoonPhantomFootstepsEnabled", true);
+
+            bloodMoonShaderAtmosphereIntensity = builder
+                    .comment("Intensity of the red atmospheric sky & cloud tint passed to shaders during Blood Moon (0.0 to 1.0, default: 0.35)")
+                    .defineInRange("bloodMoonShaderAtmosphereIntensity", 0.35, 0.0, 1.0);
 
             builder.pop();
         }
