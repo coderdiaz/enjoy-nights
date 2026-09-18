@@ -54,11 +54,9 @@ public class BedSleepHelper {
         int durationSeconds = EnjoyNightsConfig.SERVER.bedBuffDurationSeconds.get();
         int durationTicks = durationSeconds * 20;
 
-        // Stamina & Recovery buffs
+        // Recovery buffs: Regeneration II, Resistance I, Saturation
         player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, durationTicks, 1, false, true, true));
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, durationTicks, 0, false, true, true));
-        player.addEffect(new MobEffectInstance(MobEffects.SPEED, durationTicks, 0, false, true, true));
-        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, durationTicks, 1, false, true, true));
         player.addEffect(new MobEffectInstance(MobEffects.SATURATION, 40, 0, false, false, false));
 
         // Play pleasant rest sound
