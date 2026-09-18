@@ -4,9 +4,31 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
+## [1.1.0] - 2026-09-18
+
+### 🚀 Features & Balance
+* **Creeper Potion Cloud Fix & Charged Creepers:**
+  * Creepers no longer receive potion effects (eliminating the lingering `AreaEffectCloud` explosion exploit where players could obtain permanent Strength/Speed).
+  * Added chance for Creepers to spawn as **Charged Creepers** under lunar events: 20% on Full Moon (`fullMoonChargedCreeperChance`) and 45% on Blood Moon (`bloodMoonChargedCreeperChance`).
+  * Normal boosted Creepers receive agility improvements directly via attribute modifier (+15% movement speed) without potion particles.
+* **Bed Recovery Station Rebalance & Fair Play Cooldown:**
+  * Streamlined recovery buffs: removed Speed I and Absorption II; now grants **Regeneration II**, **Resistance I**, and instant **Saturation**.
+  * Increased buff duration from 80s to **90 seconds (1800 ticks)**.
+  * Added a **180-second (3 minutes) cooldown** between bed rests (`bedRestCooldownSeconds = 180`).
+  * If a player attempts to sleep before 180s have passed, the bed prevents sleeping and displays an action bar message showing the remaining cooldown time.
+* **Universal Blood Moon Visuals & Complementary Unbound Support:**
+  * Uses Mojang's native `RenderPipelines.VIGNETTE` with official `textures/misc/vignette.png` and multiplicative color subtraction (`Dst * (1 - Src)`), completely eliminating vertical seams, rectangular cuts, and washed-out screen veils.
+  * The center of the screen remains 100% crystal clear, while screen borders and corners receive a smooth, cinematic dark-crimson vignette.
+  * Added dynamic runtime detection for **Complementary Unbound** shaders via Iris (`ShaderDetectionHelper`): automatically applies a calibrated, softer vignette balance (`bloodMoonComplementarySpecific = true`) that seamlessly complements Complementary's tonemap and lighting.
+  * Configurable vignette intensity (`bloodMoonVignetteIntensity = 0.70`, range 0.1 to 1.0) and toggle in `enjoy_nights-client.toml`.
+  * Added dense red fog plane adjustment for vanilla/non-shader setups.
+  * Added floating crimson ember spores (`CRIMSON_SPORE`) around players during Blood Moon nights (which bloom into glowing red embers with Complementary's particle bloom!).
+
+---
+
 ## [1.0.0] - 2026-09-18
 
-### 🚀 Features (Nuevas Características)
+### 🚀 Features
 * **Beds as Tactical Recovery Stations (No Night Skip):**
   * Sleeping in beds no longer skips time to morning.
   * Players rest for exactly 10 seconds before being automatically woken up.
@@ -34,7 +56,7 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
-### 🐛 Fixes & AI Improvements (Correcciones y Mejoras de IA)
+### 🐛 Fixes & AI Improvements
 * **Intelligent Barrier Detection (Anti-Mountain Fix):**
   * Fixed an issue where zombies attacked natural hillside/mountain dirt steps instead of pathfinding up slopes.
   * Added logic verifying that jumpable 1-block terrain steps are ignored so mobs maintain full pursuit speed up hills.
@@ -49,7 +71,7 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
-### ⚠️ Breaking Changes & Vanilla Overrides (Cambios en Mecánicas Vanilla)
+### ⚠️ Breaking Changes & Vanilla Overrides
 * **Vanilla Daylight Skipping Disabled:**
   * Beds can no longer be used by players to skip the night or thunderstorm cycles. All players will wake up after 10 seconds into the ongoing night.
 * **Phantom Mechanics Overridden:**

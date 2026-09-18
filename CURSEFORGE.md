@@ -11,12 +11,13 @@ Tired of players instantly skipping the night with a bed? Annoyed by annoying Ph
 ### 🛏️ Beds as Tactical Recovery Stations (No Night Skip!)
 * **Sleeping no longer skips the night.** You can no longer fast-forward the daylight cycle.
 * When you sleep in a bed, you rest for **10 seconds** before automatically standing up.
-* Finishing your rest grants a **1 minute and 20 seconds (80s)** stamina and recovery buff:
+* Finishing your rest grants a **1 minute and 30 seconds (90s)** recovery buff:
   * **Regeneration II** (rapid healing)
   * **Resistance I** (damage reduction)
-  * **Speed I** (stamina & agility)
-  * **Absorption II** (extra golden hearts)
   * **Saturation** (fills hunger bars)
+* **Fair-Play Anti-Abuse Cooldown (180s / 3 minutes):**
+  * Once you rest in bed, you cannot sleep again until **180 seconds (3 minutes)** have passed (`bedRestCooldownSeconds = 180`).
+  * If you try to sleep before the cooldown expires, the bed prevents sleeping and an action bar message shows the remaining seconds.
 * Use your bed as a pre-combat station before heading out into the dangerous night!
 
 ### 👻 Farewell, Phantoms! (Phantom Suppression)
@@ -36,6 +37,7 @@ Tired of players instantly skipping the night with a bed? Annoyed by annoying Ph
 * **🌕 Full Moon (Phase 0 - Every 8 Nights):**
   * Monsters become hyper-aggressive with extended follow range (+16 blocks).
   * 50% chance for monsters to spawn with **Strength** and **Speed** potion effects.
+  * **Anti-Exploit Creeper Mechanics:** Creepers do not receive potion effects (preventing permanent lingering potion clouds upon detonation); instead, they have a **20% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.20`) with +15% movement speed!
   * Slaying these powered monsters rewards **3x Experience**!
 
 ### 🕯️ Enclosed Dark Area Paranoia
@@ -46,7 +48,9 @@ Tired of players instantly skipping the night with a bed? Annoyed by annoying Ph
 
 ### 🩸 Blood Moon Sieges & Destructive AI
 * Every **10 nights** (configurable on the server from 1 to 365 days), the **Blood Moon** rises with an ominous announcement and a blood-red sky.
+* **Universal Shader-Compatible Atmosphere:** Features a blood-red screen vignette overlay (100% visible even with shaders like Complementary Unbound or Iris), floating crimson ember particles (`CRIMSON_SPORE`), and dense crimson fog.
 * All monsters gain **Strength II, Resistance, and Speed**.
+* **Charged Creepers (45% chance):** Creepers have a 45% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.45`) without dropping lingering potion clouds.
 * **Intelligent Siege AI:**
   * **Blood Scent:** During the Blood Moon, zombies sense players through walls and doors (up to 32 blocks) without losing target when you enter a house.
   * **Breaching Barricades:** If you barricade yourself inside, zombies will actively break **wooden blocks** (doors, trapdoors, planks, logs, fences) and **dirt/dust blocks** (dirt, sand, gravel) with authentic hit and break sounds!
@@ -64,7 +68,8 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
     [server.bed_and_sleep]
         preventNightSkip = true
         bedSleepDurationSeconds = 10
-        bedBuffDurationSeconds = 80
+        bedBuffDurationSeconds = 90
+        bedRestCooldownSeconds = 180
 
     [server.phantoms]
         preventPhantoms = true
@@ -75,6 +80,8 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         newMoonStealthFactor = 0.40
         fullMoonMobBuffsEnabled = true
         fullMoonExperienceMultiplier = 3
+        fullMoonChargedCreeperChance = 0.20
+        bloodMoonChargedCreeperChance = 0.45
 
     [server.paranoia]
         paranoiaDurationSeconds = 180
@@ -89,6 +96,14 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         bloodMoonSiegeWavesEnabled = true
         bloodMoonWaveIntervalSeconds = 30
         bloodMoonMaxNearbyMobs = 16
+
+[client]
+    bloodMoonFogTint = true
+    bloodMoonScreenVignette = true
+    bloodMoonVignetteIntensity = 0.70
+    bloodMoonComplementarySpecific = true
+    bloodMoonParticles = true
+    paranoiaSoundsEnabled = true
 ```
 
 ---
@@ -105,21 +120,5 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
 
 * **Minecraft:** `1.21.11`
 * **Mod Loader:** `NeoForge 21.11.45+`
-* **Side:** Required on **Server**, recommended on **Client** for red fog and atmospheric sound effects.
-* Compatible with performance mods like Iris and Sodium / Embeddium.
-
----
-
-<details>
-<summary><b>🇪🇸 Descripción en Español (Haz clic para expandir)</b></summary>
-
-### ¡Disfruta de las noches en Minecraft!
-**Enjoy Nights!** convierte las noches de Minecraft en un verdadero reto de supervivencia:
-- **Las camas ya no saltan la noche:** Ahora sirven como estaciones de recuperación. Al descansar 10 segundos recibes buffs de Regeneración II, Resistencia, Velocidad, Absorción y Saturación por 1 minuto y 20 segundos.
-- **Sin Phantoms:** Adiós a las molestas pesadillas aéreas; el insomnio queda deshabilitado.
-- **Fases Lunares:** Luna Nueva te otorga 60% más sigilo entre las sombras; Luna Llena trae mobs potenciados con Fuerza/Velocidad, 3x más experiencia y probabilidad de soltar hierro, gemas y diamantes (1%).
-- **Paranoia en la Oscuridad:** Si pasas más de 3 minutos escondido y quieto en un lugar cerrado sin luz, sufrirás alucinaciones sonoras y debilidad.
-- **Lunas de Sangre y Asedio (Cada 10 días):** Noche de asedio con niebla roja, mayor spawn controlado y zombies con IA destructiva capaz de derribar puertas, madera y tierra para alcanzarte, rastreándote a través de muros mediante "olfato de sangre".
-
-Totalmente configurable en el servidor con comandos como `/enjoynights info` y `/enjoynights bloodmoon start`.
-</details>
+* **Side:** Required on **Server**, recommended on **Client** for red fog, screen vignette, ember particles, and atmospheric sound effects.
+* **Shaders:** Fully compatible with shaders including **Complementary Unbound**, **Iris**, **Sodium / Embeddium**, and Vanilla.
