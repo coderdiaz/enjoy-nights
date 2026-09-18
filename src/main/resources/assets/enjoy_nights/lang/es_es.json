@@ -1,6 +1,7 @@
 {
   "enjoy_nights.bed.rest_message": "¡Has descansado en la cama y te sientes con energía! (La noche no se puede saltar)",
   "enjoy_nights.bed.rest_title": "Descansado y Preparado",
+  "enjoy_nights.bed.cooldown": "¡Aún no estás lo suficientemente cansado para descansar! (Espera %ss)",
   "enjoy_nights.bloodmoon.warning": "¡La Luna de Sangre asciende... El asedio comienza!",
   "enjoy_nights.bloodmoon.ended": "La Luna de Sangre ha desaparecido. El asedio ha terminado.",
   "enjoy_nights.paranoia.whisper": "Sientes una presencia escalofriante observándote en la oscuridad..."
