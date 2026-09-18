@@ -79,12 +79,12 @@ public class EnjoyNightsConfig {
                     .defineInRange("fullMoonExperienceMultiplier", 3, 1, 10);
 
             fullMoonChargedCreeperChance = builder
-                    .comment("Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers during a Full Moon (default: 0.20 = 20%)")
-                    .defineInRange("fullMoonChargedCreeperChance", 0.20, 0.0, 1.0);
+                    .comment("Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers during a Full Moon (default: 0.05 = 5%)")
+                    .defineInRange("fullMoonChargedCreeperChance", 0.05, 0.0, 1.0);
 
             bloodMoonChargedCreeperChance = builder
-                    .comment("Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers during a Blood Moon (default: 0.45 = 45%)")
-                    .defineInRange("bloodMoonChargedCreeperChance", 0.45, 0.0, 1.0);
+                    .comment("Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers during a Blood Moon (default: 0.25 = 25%)")
+                    .defineInRange("bloodMoonChargedCreeperChance", 0.25, 0.0, 1.0);
             builder.pop();
 
             builder.push("paranoia");
