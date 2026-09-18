@@ -148,6 +148,7 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue bloodMoonParticles;
         public final ModConfigSpec.BooleanValue paranoiaSoundsEnabled;
         public final ModConfigSpec.BooleanValue bloodMoonPhantomFootstepsEnabled;
+        public final ModConfigSpec.DoubleValue bloodMoonShaderAtmosphereIntensity;
 
         public Client(ModConfigSpec.Builder builder) {
             builder.comment("Client-side configurations for Enjoy Nights!").push("client");
@@ -179,6 +180,10 @@ public class EnjoyNightsConfig {
             bloodMoonPhantomFootstepsEnabled = builder
                     .comment("Whether players experience phantom footsteps rushing behind them when they stop or mine during a Blood Moon")
                     .define("bloodMoonPhantomFootstepsEnabled", true);
+
+            bloodMoonShaderAtmosphereIntensity = builder
+                    .comment("Intensity of the red atmospheric sky & cloud tint passed to shaders during Blood Moon (0.0 to 1.0, default: 0.35)")
+                    .defineInRange("bloodMoonShaderAtmosphereIntensity", 0.35, 0.0, 1.0);
 
             builder.pop();
         }
