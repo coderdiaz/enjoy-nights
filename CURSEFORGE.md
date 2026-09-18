@@ -37,7 +37,7 @@ Tired of players instantly skipping the night with a bed? Annoyed by annoying Ph
 * **🌕 Full Moon (Phase 0 - Every 8 Nights):**
   * Monsters become hyper-aggressive with extended follow range (+16 blocks).
   * 50% chance for monsters to spawn with **Strength** and **Speed** potion effects.
-  * **Anti-Exploit Creeper Mechanics:** Creepers do not receive potion effects (preventing permanent lingering potion clouds upon detonation); instead, they have a **20% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.20`) with +15% movement speed!
+  * **Anti-Exploit Creeper Mechanics:** Creepers do not receive potion effects (preventing permanent lingering potion clouds upon explosion); instead, they have a **5% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.05`) with +15% movement speed!
   * Slaying these powered monsters rewards **3x Experience**!
 
 ### 🕯️ Enclosed Dark Area Paranoia
@@ -50,7 +50,7 @@ Tired of players instantly skipping the night with a bed? Annoyed by annoying Ph
 * Every **10 nights** (configurable on the server from 1 to 365 days), the **Blood Moon** rises with an ominous announcement and a blood-red sky.
 * **Universal Shader-Compatible Atmosphere:** Features a blood-red screen vignette overlay (100% visible even with shaders like Complementary Unbound or Iris), floating crimson ember particles (`CRIMSON_SPORE`), and dense crimson fog.
 * All monsters gain **Strength II, Resistance, and Speed**.
-* **Charged Creepers (45% chance):** Creepers have a 45% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.45`) without dropping lingering potion clouds.
+* **Charged Creepers (25% chance):** Creepers have a 25% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.25`) without dropping lingering potion clouds.
 * **Intelligent Siege AI:**
   * **Blood Scent:** During the Blood Moon, zombies sense players through walls and doors (up to 32 blocks) without losing target when you enter a house.
   * **Breaching Barricades:** If you barricade yourself inside, zombies will actively break **wooden blocks** (doors, trapdoors, planks, logs, fences) and **dirt/dust blocks** (dirt, sand, gravel) with authentic hit and break sounds!
@@ -80,8 +80,8 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         newMoonStealthFactor = 0.40
         fullMoonMobBuffsEnabled = true
         fullMoonExperienceMultiplier = 3
-        fullMoonChargedCreeperChance = 0.20
-        bloodMoonChargedCreeperChance = 0.45
+        fullMoonChargedCreeperChance = 0.05
+        bloodMoonChargedCreeperChance = 0.25
 
     [server.paranoia]
         paranoiaDurationSeconds = 180

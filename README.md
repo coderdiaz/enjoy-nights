@@ -38,7 +38,7 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * **Full Moon (Phase 0 - Every 8 Nights):**
   * Monsters become more aggressive, spawning with an extended follow range (+16 blocks).
   * 50% chance for monsters to spawn with **Strength** and **Speed** potion effects.
-  * **Anti-Exploit Creeper Mechanics:** Creepers never receive potion effects (preventing permanent lingering potion clouds upon explosion); instead, they have a **20% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.20`) and receive a direct +15% movement speed attribute buff.
+  * **Anti-Exploit Creeper Mechanics:** Creepers never receive potion effects (preventing permanent lingering potion clouds upon explosion); instead, they have a **5% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.05`) and receive a direct +15% movement speed attribute buff.
   * Defeating powered monsters rewards **3x Experience** (`fullMoonExperienceMultiplier = 3`).
 
 ### 6. Enclosed Dark Area Paranoia
@@ -54,7 +54,7 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
   * An ominous warning sounds and a broadcast is sent to all players: *"The Blood Moon rises... The siege begins!"*
   * **Universal Shader-Compatible Atmosphere:** Renders a blood-red screen vignette tint overlay (100% visible even with shaders like Complementary Unbound or Iris), floating crimson ember particles (`CRIMSON_SPORE`), and dense crimson fog.
   * Inherits all mineral drops and 3x XP from the Full Moon, with a 75% chance for monsters to gain **Strength II**, **Resistance**, and **Speed**.
-  * **Charged Creepers (45% chance):** Creepers have a 45% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.45`) without dropping lingering potion clouds.
+  * **Charged Creepers (25% chance):** Creepers have a 25% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.25`) without dropping lingering potion clouds.
 * **Balanced Siege Mob Spawning (Anti-Lag):**
   * Natural monster spawns have a 35% chance to spawn an additional companion mob.
   * Small periodic waves of 1-2 siege zombies spawn every 30 seconds around active players.
@@ -103,10 +103,10 @@ All mechanics are 100% customizable:
         fullMoonMobBuffsEnabled = true
         # Experience multiplier for powered monsters
         fullMoonExperienceMultiplier = 3
-        # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Full Moon (default: 0.20 = 20%)
-        fullMoonChargedCreeperChance = 0.20
-        # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Blood Moon (default: 0.45 = 45%)
-        bloodMoonChargedCreeperChance = 0.45
+        # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Full Moon (default: 0.05 = 5%)
+        fullMoonChargedCreeperChance = 0.05
+        # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Blood Moon (default: 0.25 = 25%)
+        bloodMoonChargedCreeperChance = 0.25
 
     [server.paranoia]
         # Seconds standing still in a dark enclosed space before paranoia triggers (180s = 3 min)

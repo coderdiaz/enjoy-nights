@@ -9,7 +9,7 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 ### 🚀 Features & Balance
 * **Creeper Potion Cloud Fix & Charged Creepers:**
   * Creepers no longer receive potion effects (eliminating the lingering `AreaEffectCloud` explosion exploit where players could obtain permanent Strength/Speed).
-  * Added chance for Creepers to spawn as **Charged Creepers** under lunar events: 20% on Full Moon (`fullMoonChargedCreeperChance`) and 45% on Blood Moon (`bloodMoonChargedCreeperChance`).
+  * Added chance for Creepers to spawn as **Charged Creepers** under lunar events: **5%** on Full Moon (`fullMoonChargedCreeperChance = 0.05`) and **25%** on Blood Moon (`bloodMoonChargedCreeperChance = 0.25`) to prevent excessive terrain destruction.
   * Normal boosted Creepers receive agility improvements directly via attribute modifier (+15% movement speed) without potion particles.
 * **Bed Recovery Station Rebalance & Fair Play Cooldown:**
   * Streamlined recovery buffs: removed Speed I and Absorption II; now grants **Regeneration II**, **Resistance I**, and instant **Saturation**.
