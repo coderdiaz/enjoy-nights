@@ -1,6 +1,6 @@
 # Enjoy nights! 🌙
 
-A mod for **Minecraft 1.21.11** and **NeoForge 21.11.45** that transforms the night from something to skip into a challenging, rewarding, and atmospheric survival experience. Beds become temporary tactical preparation stations, nighttime survival is rewarded with lunar phase perks and mineral drops, and periodic Blood Moon sieges bring destructive zombie AI to breach your fortifications.
+A mod for **Minecraft** and **NeoForge** that transforms the night from something to skip into a challenging, rewarding, and atmospheric survival experience. Beds become temporary tactical preparation stations, nighttime survival is rewarded with lunar phase perks and mineral drops, and periodic Blood Moon sieges bring destructive zombie AI to breach your fortifications.
 
 ---
 
@@ -11,12 +11,13 @@ A mod for **Minecraft 1.21.11** and **NeoForge 21.11.45** that transforms the ni
 * After lying down for **10 seconds (200 ticks)** of rest, the player automatically wakes up and stands up without altering the daylight cycle.
 
 ### 2. Recovery Station (Bed as a Buff Station)
-* Completing the 10-second rest in bed grants a tactical recovery and stamina buff lasting **1 minute and 20 seconds (80 seconds)**:
+* Completing the 10-second rest in bed grants a tactical recovery buff lasting **1 minute and 30 seconds (90 seconds)**:
   * **Regeneration II** (accelerated health recovery)
   * **Resistance I** (reduced incoming damage)
-  * **Speed I** (extra stamina and agility for combat/movement)
-  * **Absorption II** (extra golden hearts)
-  * **Saturation** (instantly replenishes hunger bars)
+  * **Saturation** (replenishes hunger bars)
+* **Fair-Play Anti-Abuse Cooldown (180s / 3 minutes):**
+  * Once you rest in bed, you cannot sleep again until **180 seconds (3 minutes)** have passed (`bedRestCooldownSeconds = 180`).
+  * Attempting to sleep during cooldown displays an action bar alert indicating the remaining seconds before you can rest again.
 * Ideal for preparing yourself before venturing out into the dangerous night or defending your base.
 
 ### 3. Total Nightmare Suppression (Phantoms Removed)
@@ -37,7 +38,8 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * **Full Moon (Phase 0 - Every 8 Nights):**
   * Monsters become more aggressive, spawning with an extended follow range (+16 blocks).
   * 50% chance for monsters to spawn with **Strength** and **Speed** potion effects.
-  * Defeating these powered monsters rewards **3x Experience** (`fullMoonExperienceMultiplier = 3`).
+  * **Anti-Exploit Creeper Mechanics:** Creepers never receive potion effects (preventing permanent lingering potion clouds upon explosion); instead, they have a **5% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.05`) and receive a direct +15% movement speed attribute buff.
+  * Defeating powered monsters rewards **3x Experience** (`fullMoonExperienceMultiplier = 3`).
 
 ### 6. Enclosed Dark Area Paranoia
 * If a player stays **still for more than 3 minutes (180s)** in an enclosed area (under a ceiling / no sky exposure) with **block light at 0** during the night:
@@ -50,8 +52,9 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * Occurs periodically every **10 nights** by default (`bloodMoonIntervalDays = 10`, fully configurable on the server from 1 to 365 days).
 * When night falls on a Blood Moon night:
   * An ominous warning sounds and a broadcast is sent to all players: *"The Blood Moon rises... The siege begins!"*
-  * The sky and fog take on an atmospheric **blood-red tint**.
+  * **Universal Shader-Compatible Atmosphere:** Renders a blood-red screen vignette tint overlay (100% visible even with shaders like Complementary Unbound or Iris), floating crimson ember particles (`CRIMSON_SPORE`), and dense crimson fog.
   * Inherits all mineral drops and 3x XP from the Full Moon, with a 75% chance for monsters to gain **Strength II**, **Resistance**, and **Speed**.
+  * **Charged Creepers (25% chance):** Creepers have a 25% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.25`) without dropping lingering potion clouds.
 * **Balanced Siege Mob Spawning (Anti-Lag):**
   * Natural monster spawns have a 35% chance to spawn an additional companion mob.
   * Small periodic waves of 1-2 siege zombies spawn every 30 seconds around active players.
@@ -67,7 +70,9 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 
 ---
 
-## ⚙️ Server Configuration (`config/enjoy_nights-server.toml`)
+### ⚙️ Configuration
+
+### Server Configuration (`config/enjoy_nights-server.toml`)
 
 All mechanics are 100% customizable:
 
@@ -78,8 +83,10 @@ All mechanics are 100% customizable:
         preventNightSkip = true
         # Duration of bed rest in seconds before waking up automatically
         bedSleepDurationSeconds = 10
-        # Duration of recovery and stamina buffs (seconds: 80s = 1m 20s)
-        bedBuffDurationSeconds = 80
+        # Duration of recovery buffs in seconds (default: 90s = 1m 30s)
+        bedBuffDurationSeconds = 90
+        # Cooldown in seconds before a player can rest in bed again (default: 180s = 3 minutes)
+        bedRestCooldownSeconds = 180
 
     [server.phantoms]
         # Disables natural Phantom spawning caused by insomnia
@@ -96,6 +103,10 @@ All mechanics are 100% customizable:
         fullMoonMobBuffsEnabled = true
         # Experience multiplier for powered monsters
         fullMoonExperienceMultiplier = 3
+        # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Full Moon (default: 0.05 = 5%)
+        fullMoonChargedCreeperChance = 0.05
+        # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Blood Moon (default: 0.25 = 25%)
+        bloodMoonChargedCreeperChance = 0.25
 
     [server.paranoia]
         # Seconds standing still in a dark enclosed space before paranoia triggers (180s = 3 min)
@@ -117,6 +128,24 @@ All mechanics are 100% customizable:
         bloodMoonWaveIntervalSeconds = 30
         # Maximum nearby hostile mobs before pausing extra spawns (anti-lag cap)
         bloodMoonMaxNearbyMobs = 16
+```
+
+### Client Configuration (`config/enjoy_nights-client.toml`)
+
+```toml
+[client]
+    # Tint the vanilla atmosphere and fog blood-red during a Blood Moon night
+    bloodMoonFogTint = true
+    # Display a smooth, circular dark-crimson vignette overlay on screen during Blood Moon
+    bloodMoonScreenVignette = true
+    # Intensity of the blood-red vignette on screen edges during Blood Moon (0.1 to 1.0, default: 0.70)
+    bloodMoonVignetteIntensity = 0.70
+    # Automatically apply an optimized softer vignette balance when Complementary Unbound shader is detected
+    bloodMoonComplementarySpecific = true
+    # Spawn ambient crimson ember spores floating around the player during Blood Moon nights
+    bloodMoonParticles = true
+    # Play disturbing hallucinations and ambient sounds when paranoia is triggered
+    paranoiaSoundsEnabled = true
 ```
 
 ---
@@ -142,4 +171,4 @@ All mechanics are 100% customizable:
 ./gradlew runServer
 ```
 
-The generated JAR file is located at: `build/libs/enjoy_nights-1.0.0.jar`.
+The generated JAR file is located at: `build/libs`.

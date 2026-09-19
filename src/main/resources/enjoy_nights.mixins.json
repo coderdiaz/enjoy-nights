@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.coderdiaz.enjoynights.mixin",
+  "plugin": "com.coderdiaz.enjoynights.mixin.EnjoyNightsMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "SkyRendererMixin",
+    "IrisCommonUniformsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
