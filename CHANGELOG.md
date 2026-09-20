@@ -4,6 +4,40 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
+## [1.2.0] - 2026-09-20
+
+### 🚀 New Features & Enhancements
+* **Warding Totem & Base Sanctuary System:**
+  * Added craftable **Warding Totem** (`enjoy_nights:warding_totem`) to safeguard player bases and structures.
+  * **Perimeter Repulsion Forcefield:** Instead of cancelling mob spawns, monsters attempting to spawn within the 100-block protection radius (`wardingTotemRadius = 100`) are repelled and relocated to the perimeter exterior (102–106 blocks away on surface ground), concentrating the siege outside the base without reducing world mob density.
+  * **Amethyst Catalyst GUI:** Dedicated interface where players deposit 8 Amethyst Shards (`wardingTotemAmethystCost = 8`) and click **[Activar]** to bind the totem to their UUID.
+  * **Anti-Abuse Rule (1 Active Totem per Player):** Players can only operate 1 active totem at a time. Attempting to activate a second totem anywhere on the server is strictly rejected with coordinates to their existing active ward.
+  * **Safe Deactivation & Refund:** Deactivating the totem via its GUI frees the player's binding and safely returns the 8 amethyst shards to their inventory.
+  * **Permanent Destruction (No Silk Touch Recovery):** Mining or breaking the totem block in the world permanently destroys it without dropping the totem item (even when using a Silk Touch pickaxe). Any stored amethysts are refunded on break.
+* **Blood Moon Torch & Light Immunity:**
+  * Monsters outside protected wards now ignore light levels emitted by torches and lanterns during Blood Moon (`bloodMoonIgnoreTorches = true`). Outdoor areas will crawl with monsters regardless of artificial lighting.
+  * The Warding Totem remains the only inviolable sanctuary where monsters cannot spawn.
+* **Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Midnight Time Lock:**
+  * Spawns at exact midnight (tick `18000`) of the Blood Moon (`bloodMoonBossEnabled = true`).
+  * **Frozen Time Mechanic:** While the boss is alive, the world daylight cycle is strictly locked at midnight (`bloodMoonBossFreezeTime = true`). The blood-red moon stays hung in the sky and dawn will never arrive until the boss is vanquished.
+  * **On-Screen Boss Bar:** Vivid red boss bar (`ServerBossEvent`) visible at the top of the screen tracking health percentage and player engagement within 128 blocks.
+  * **Dynamic Player Scaling:** Scales health and attack damage based on the number of active players nearby ($150\text{ HP} + 75\text{ HP}$ per extra player; $10\text{ damage} + 1.5$ per extra player).
+  * **Imposing Scale & Colossus Stride:** Towering at 1.7x scale (`Attributes.SCALE`) with 1.25 step height (`Attributes.STEP_HEIGHT`).
+  * **Smart Aggro & Target Commitment:** Commits to targets in 5-second windows to eliminate pathfinder stutter while tracking damage threat to aggressively pursue snipers and archers.
+  * **Elden Ring Moveset & Combat Abilities:**
+    * **Conical Cleave:** 120° frontal sweep damaging multiple players within melee range.
+    * **Devastating Leap Slam:** Launches toward distant archers, dealing AoE explosion damage and disabling shields for 5 seconds.
+    * **Ground Fissure:** Slams the ground launching nearby players into the air.
+    * **Repulsion Wave:** Discharges a concussive shockwave when crowded by 3 or more players.
+    * **Phase 2 "Furia del Eclipse":** Activates below 40% health with soul-fire aura, speed buffs, fire-infused attacks, and halved ability cooldowns.
+    * **Midnight Roar & Minion Waves:** Emits Warden roars causing Darkness and Slowness, and summons minion reinforcements at 75%, 50%, and 25% health.
+  * **Triumphant Victory & Rewards:** Defeating the boss broadcasts a global victory announcement, unfreezes the passage of time toward dawn, and awards 500 XP, Diamonds, Emeralds, Amethyst Shards, and a Totem of Undying.
+  * **100% Server Configurable:** Scale, cleave angle/radius, leap attack, shockwave, phase 2, health, damage, and time lock are fully customizable in `enjoy_nights-server.toml`.
+* **Blood Moon Flame Skeletons:**
+  * Skeletons spawning during Blood Moon have a 15% chance (`bloodMoonFlameSkeletonChance = 0.15`) to spawn as fiery archers equipped with helmets and Flame-enchanted bows, firing incendiary arrows that ignite targets and combustible blocks. Their flame bows and helmets are guaranteed never to drop on death to prevent loot farming.
+
+---
+
 ## [1.1.1] - 2026-09-19
 
 ### 🐛 Bug Fixes
