@@ -24,6 +24,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.LightLayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.List;
@@ -72,6 +73,14 @@ public class BloodMoonEvents {
             announceBloodMoonEnd(level);
             if (NightAndMoonHelper.isForceBloodMoon()) {
                 NightAndMoonHelper.setForceBloodMoon(false);
+            }
+            if (!DARKNESS_PULSE_COOLDOWNS.isEmpty()) {
+                DARKNESS_PULSE_COOLDOWNS.clear();
+            }
+            for (ServerPlayer player : level.players()) {
+                if (player.hasEffect(MobEffects.DARKNESS)) {
+                    player.removeEffect(MobEffects.DARKNESS);
+                }
             }
         }
 
@@ -139,15 +148,8 @@ public class BloodMoonEvents {
                     DARKNESS_PULSE_COOLDOWNS.put(uuid, cooldown);
                 }
             }
-        } else if (!isBloodMoon) {
-            if (!DARKNESS_PULSE_COOLDOWNS.isEmpty()) {
-                DARKNESS_PULSE_COOLDOWNS.clear();
-            }
-            for (ServerPlayer player : level.players()) {
-                if (player.hasEffect(MobEffects.DARKNESS)) {
-                    player.removeEffect(MobEffects.DARKNESS);
-                }
-            }
+        } else if (!isBloodMoon && !DARKNESS_PULSE_COOLDOWNS.isEmpty()) {
+            DARKNESS_PULSE_COOLDOWNS.clear();
         }
     }
 
@@ -242,5 +244,10 @@ public class BloodMoonEvents {
         for (ServerPlayer player : level.players()) {
             player.sendSystemMessage(message);
         }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        DARKNESS_PULSE_COOLDOWNS.remove(event.getEntity().getUUID());
     }
 }

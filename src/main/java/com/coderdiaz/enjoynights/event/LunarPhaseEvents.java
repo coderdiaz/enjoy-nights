@@ -4,7 +4,6 @@ import com.coderdiaz.enjoynights.config.EnjoyNightsConfig;
 import com.coderdiaz.enjoynights.util.NightAndMoonHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -20,7 +19,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 public class LunarPhaseEvents {
     public static final String TAG_POWERED_MOB = "enjoy_nights:powered";
@@ -38,20 +36,6 @@ public class LunarPhaseEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-
-        Level level = player.level();
-        // New Moon lower visibility when outside under the dark night sky
-        if (player.tickCount % 40 == 0 && NightAndMoonHelper.isNewMoon(level)) {
-            if (level.canSeeSky(player.blockPosition())) {
-                player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0, true, false, false));
-            }
-        }
-    }
 
     @SubscribeEvent
     public static void onMonsterSpawn(FinalizeSpawnEvent event) {
