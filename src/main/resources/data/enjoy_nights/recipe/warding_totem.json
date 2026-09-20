@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "E": "minecraft:ender_eye",
+    "C": "minecraft:crying_obsidian",
+    "S": "minecraft:soul_lantern",
+    "O": "minecraft:obsidian"
+  },
+  "pattern": [
+    "GEG",
+    "CSC",
+    "OOO"
+  ],
+  "result": {
+    "count": 1,
+    "id": "enjoy_nights:warding_totem"
+  }
+}

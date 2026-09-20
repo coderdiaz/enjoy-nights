@@ -6,5 +6,17 @@
   "enjoy_nights.bloodmoon.title": "LA LUNA DE SANGRE HA SURGIDO",
   "enjoy_nights.bloodmoon.subtitle": "El asedio ha comenzado. Busca refugio.",
   "enjoy_nights.bloodmoon.ended": "La Luna de Sangre ha desaparecido. El asedio ha terminado.",
-  "enjoy_nights.paranoia.whisper": "Sientes una presencia escalofriante observándote en la oscuridad..."
+  "enjoy_nights.paranoia.whisper": "Sientes una presencia escalofriante observándote en la oscuridad...",
+
+  "block.enjoy_nights.warding_totem": "Tótem de Resguardo",
+  "item.enjoy_nights.warding_totem": "Tótem de Resguardo",
+  "enjoy_nights.ward.activated": "¡Tótem de Resguardo activado! Base protegida en un radio de %s bloques (los monstruos son repelidos al perímetro).",
+  "enjoy_nights.ward.deactivated": "Tótem de Resguardo desactivado. Tus fragmentos de amatista han sido devueltos.",
+  "enjoy_nights.ward.already_active": "¡Ya tienes un Tótem de Resguardo activo en [%s, %s, %s]! Debes desactivarlo primero.",
+  "enjoy_nights.ward.need_amethysts": "¡Necesitas al menos %s fragmentos de amatista para activar este tótem!",
+  "enjoy_nights.ward.not_owner": "Este tótem está vinculado a %s. Solo el dueño puede modificarlo o desactivarlo.",
+  "enjoy_nights.ward.button.activate": "Activar",
+  "enjoy_nights.ward.button.deactivate": "Desactivar",
+  "enjoy_nights.ward.status.active": "ESTADO: ACTIVO",
+  "enjoy_nights.ward.status.inactive": "Inserta %s fragmentos de amatista para activar"
 }

@@ -20,6 +20,10 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue paranoiaDurationSeconds;
         public final ModConfigSpec.BooleanValue paranoiaWeaknessEnabled;
 
+        // Warding Totem Configurations
+        public final ModConfigSpec.IntValue wardingTotemRadius;
+        public final ModConfigSpec.IntValue wardingTotemAmethystCost;
+
         // Blood Moon & Siege Configurations
         public final ModConfigSpec.IntValue bloodMoonIntervalDays;
         public final ModConfigSpec.BooleanValue bloodMoonSiegeEnabled;
@@ -96,6 +100,16 @@ public class EnjoyNightsConfig {
             paranoiaWeaknessEnabled = builder
                     .comment("Whether paranoia causes weakness and hallucination effects and disturbing sounds")
                     .define("paranoiaWeaknessEnabled", true);
+            builder.pop();
+
+            builder.push("warding_totem");
+            wardingTotemRadius = builder
+                    .comment("Radius in blocks protected by an active Warding Totem from mob spawns (default: 100 blocks)")
+                    .defineInRange("wardingTotemRadius", 100, 10, 500);
+
+            wardingTotemAmethystCost = builder
+                    .comment("Number of amethyst shards required to activate a Warding Totem (default: 8 shards)")
+                    .defineInRange("wardingTotemAmethystCost", 8, 1, 64);
             builder.pop();
 
             builder.push("blood_moon");

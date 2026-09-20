@@ -1,6 +1,7 @@
 package com.coderdiaz.enjoynights.event;
 
 import com.coderdiaz.enjoynights.config.EnjoyNightsConfig;
+import com.coderdiaz.enjoynights.ward.WardingSavedData;
 import com.coderdiaz.enjoynights.entity.ai.ZombieSiegeBreakGoal;
 import com.coderdiaz.enjoynights.util.NightAndMoonHelper;
 import net.minecraft.ChatFormatting;
@@ -184,6 +185,15 @@ public class BloodMoonEvents {
 
                 BlockPos spawnPos = new BlockPos(spawnX, spawnY, spawnZ);
 
+                // If inside a ward, relocate to the perimeter outside base
+                WardingSavedData.WardEntry ward = WardingSavedData.get(level).findNearestActiveWard(spawnPos, EnjoyNightsConfig.SERVER.wardingTotemRadius.get());
+                if (ward != null) {
+                    spawnPos = WardingSavedData.calculatePerimeterRelocation(level, spawnPos, ward.pos(), EnjoyNightsConfig.SERVER.wardingTotemRadius.get());
+                    spawnX = spawnPos.getX();
+                    spawnY = spawnPos.getY();
+                    spawnZ = spawnPos.getZ();
+                }
+
                 // Ensure reasonable vertical distance from player and valid air block
                 if (Math.abs(spawnY - player.getBlockY()) <= 12 && level.getBlockState(spawnPos).isAir()) {
                     Zombie siegeZombie = EntityType.ZOMBIE.create(level, EntitySpawnReason.EVENT);
@@ -196,6 +206,29 @@ public class BloodMoonEvents {
                         level.addFreshEntity(siegeZombie);
                     }
                 }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onCheckSpawn(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck event) {
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            BlockPos pos = event.getEntity().blockPosition();
+            WardingSavedData.WardEntry ward = WardingSavedData.get(serverLevel)
+                    .findNearestActiveWard(pos, EnjoyNightsConfig.SERVER.wardingTotemRadius.get());
+
+            if (ward != null) {
+                // Relocate mob outside the protection radius!
+                BlockPos perimeterPos = WardingSavedData.calculatePerimeterRelocation(
+                        serverLevel, pos, ward.pos(), EnjoyNightsConfig.SERVER.wardingTotemRadius.get()
+                );
+                event.getEntity().setPos(perimeterPos.getX() + 0.5, (double) perimeterPos.getY(), perimeterPos.getZ() + 0.5);
+                if (event.getEntity().checkSpawnObstruction(serverLevel)) {
+                    event.setResult(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck.Result.SUCCEED);
+                } else {
+                    event.setResult(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck.Result.FAIL);
+                }
+                return;
             }
         }
     }
