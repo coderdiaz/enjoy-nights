@@ -35,6 +35,7 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue bloodMoonWaveIntervalSeconds;
         public final ModConfigSpec.BooleanValue bloodMoonDarknessPulseEnabled;
         public final ModConfigSpec.BooleanValue bloodMoonIgnoreTorches;
+        public final ModConfigSpec.DoubleValue bloodMoonFlameSkeletonChance;
 
         public Server(ModConfigSpec.Builder builder) {
             builder.comment("Server-side configurations for Enjoy Nights!").push("server");
@@ -153,6 +154,10 @@ public class EnjoyNightsConfig {
             bloodMoonIgnoreTorches = builder
                     .comment("Whether monsters during a Blood Moon can spawn regardless of light levels emitted by torches and lanterns outside protected wards (default: true)")
                     .define("bloodMoonIgnoreTorches", true);
+
+            bloodMoonFlameSkeletonChance = builder
+                    .comment("Probability (0.0 to 1.0) for skeletons to spawn as Flame Skeletons shooting fire arrows during Blood Moon (default: 0.15 = 15%)")
+                    .defineInRange("bloodMoonFlameSkeletonChance", 0.15, 0.0, 1.0);
             builder.pop();
 
             builder.pop();

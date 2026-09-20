@@ -23,6 +23,7 @@ import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 public class LunarPhaseEvents {
     public static final String TAG_POWERED_MOB = "enjoy_nights:powered";
     public static final String TAG_EXTRA_SPAWN = "enjoy_nights:extra_spawn";
+    public static final String TAG_FIRE_SKELETON = "enjoy_nights:fire_skeleton";
 
     @SubscribeEvent
     public static void onLivingVisibility(LivingEvent.LivingVisibilityEvent event) {
@@ -96,6 +97,23 @@ public class LunarPhaseEvents {
                 monster.addTag(TAG_POWERED_MOB);
             }
 
+            // Flame Skeletons in Blood Moon (15% chance to shoot flaming arrows)
+            if (isBloodMoon && monster instanceof net.minecraft.world.entity.monster.skeleton.AbstractSkeleton skeleton) {
+                double flameChance = EnjoyNightsConfig.SERVER.bloodMoonFlameSkeletonChance.get();
+                if (random.nextFloat() < flameChance) {
+                    skeleton.addTag(TAG_FIRE_SKELETON);
+                    skeleton.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CHAINMAIL_HELMET));
+                    skeleton.setDropChance(net.minecraft.world.entity.EquipmentSlot.HEAD, 0.0F);
+                    net.minecraft.world.item.ItemStack bow = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW);
+                    net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> flameHolder =
+                            level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                                    .getOrThrow(net.minecraft.world.item.enchantment.Enchantments.FLAME);
+                    bow.enchant(flameHolder, 1);
+                    skeleton.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, bow);
+                    skeleton.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 0.0F);
+                }
+            }
+
             // Controlled extra natural mob spawn during Blood Moon
             if (isBloodMoon && EnjoyNightsConfig.SERVER.bloodMoonExtraSpawnsEnabled.get()) {
                 if (event.getSpawnType() == EntitySpawnReason.NATURAL && !monster.getTags().contains(TAG_EXTRA_SPAWN)) {
@@ -140,6 +158,26 @@ public class LunarPhaseEvents {
         if (isPowered || isFullMoon || isBloodMoon) {
             int multiplier = EnjoyNightsConfig.SERVER.fullMoonExperienceMultiplier.get();
             event.setDroppedExperience(event.getDroppedExperience() * multiplier);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onArrowSpawn(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow) {
+            if (arrow.getOwner() instanceof net.minecraft.world.entity.LivingEntity shooter) {
+                if (shooter.getTags().contains(TAG_FIRE_SKELETON)) {
+                    arrow.igniteForSeconds(100);
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
+        if (event.getEntity().getTags().contains(TAG_FIRE_SKELETON)) {
+            // Guarantee that flame skeletons never drop any bow or chainmail helmet
+            event.getDrops().removeIf(drop -> drop.getItem().is(net.minecraft.world.item.Items.BOW)
+                    || drop.getItem().is(net.minecraft.world.item.Items.CHAINMAIL_HELMET));
         }
     }
 }
