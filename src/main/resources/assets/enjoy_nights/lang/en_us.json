@@ -18,5 +18,10 @@
   "enjoy_nights.ward.button.activate": "Activate",
   "enjoy_nights.ward.button.deactivate": "Deactivate",
   "enjoy_nights.ward.status.active": "STATUS: ACTIVE",
-  "enjoy_nights.ward.status.inactive": "Insert %s Amethyst Shards to activate"
+  "enjoy_nights.ward.status.inactive": "Insert %s Amethyst Shards to activate",
+
+  "enjoy_nights.boss.spawn": "A terrifying presence descends... %s has awakened! Time is frozen until defeat!",
+  "enjoy_nights.boss.subtitle": "Midnight has frozen. Slay the harbinger to restore the dawn.",
+  "enjoy_nights.boss.defeated": "%s has been vanquished! Time begins to flow once more and the Blood Moon recedes.",
+  "enjoy_nights.boss.phase2": "[%s] Enters the Eclipse Fury! Attacks and movements are empowered!"
 }

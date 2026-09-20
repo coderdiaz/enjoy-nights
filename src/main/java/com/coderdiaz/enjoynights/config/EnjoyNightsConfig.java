@@ -37,6 +37,28 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue bloodMoonIgnoreTorches;
         public final ModConfigSpec.DoubleValue bloodMoonFlameSkeletonChance;
 
+        // Blood Moon Boss Configurations
+        public final ModConfigSpec.BooleanValue bloodMoonBossEnabled;
+        public final ModConfigSpec.ConfigValue<String> bloodMoonBossName;
+        public final ModConfigSpec.DoubleValue bloodMoonBossBaseHealth;
+        public final ModConfigSpec.DoubleValue bloodMoonBossHealthPerPlayer;
+        public final ModConfigSpec.DoubleValue bloodMoonBossBaseDamage;
+        public final ModConfigSpec.DoubleValue bloodMoonBossDamagePerPlayer;
+        public final ModConfigSpec.DoubleValue bloodMoonBossSpeed;
+        public final ModConfigSpec.DoubleValue bloodMoonBossKnockbackResistance;
+        public final ModConfigSpec.IntValue bloodMoonBossExperience;
+        public final ModConfigSpec.BooleanValue bloodMoonBossFreezeTime;
+        public final ModConfigSpec.BooleanValue bloodMoonBossSummonMinions;
+        public final ModConfigSpec.IntValue bloodMoonBossRoarCooldownSeconds;
+        public final ModConfigSpec.DoubleValue bloodMoonBossScale;
+        public final ModConfigSpec.BooleanValue bloodMoonBossCleaveEnabled;
+        public final ModConfigSpec.DoubleValue bloodMoonBossCleaveAngle;
+        public final ModConfigSpec.DoubleValue bloodMoonBossCleaveRadius;
+        public final ModConfigSpec.BooleanValue bloodMoonBossLeapAttackEnabled;
+        public final ModConfigSpec.IntValue bloodMoonBossLeapCooldownSeconds;
+        public final ModConfigSpec.IntValue bloodMoonBossShockwaveCooldownSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonBossPhase2Enabled;
+
         public Server(ModConfigSpec.Builder builder) {
             builder.comment("Server-side configurations for Enjoy Nights!").push("server");
 
@@ -158,6 +180,88 @@ public class EnjoyNightsConfig {
             bloodMoonFlameSkeletonChance = builder
                     .comment("Probability (0.0 to 1.0) for skeletons to spawn as Flame Skeletons shooting fire arrows during Blood Moon (default: 0.15 = 15%)")
                     .defineInRange("bloodMoonFlameSkeletonChance", 0.15, 0.0, 1.0);
+            builder.pop();
+
+            builder.push("blood_moon_boss");
+            bloodMoonBossEnabled = builder
+                    .comment("Whether a powerful boss spawns at midnight (tick 18000) during a Blood Moon (default: true)")
+                    .define("bloodMoonBossEnabled", true);
+
+            bloodMoonBossName = builder
+                    .comment("Display name of the Blood Moon Boss shown on the boss bar (default: 'Heraldo de la Luna de Sangre')")
+                    .define("bloodMoonBossName", "Heraldo de la Luna de Sangre");
+
+            bloodMoonBossBaseHealth = builder
+                    .comment("Base maximum health of the Blood Moon Boss for a single player (default: 150.0 = 75 hearts)")
+                    .defineInRange("bloodMoonBossBaseHealth", 150.0, 20.0, 2000.0);
+
+            bloodMoonBossHealthPerPlayer = builder
+                    .comment("Additional health added to the boss per extra nearby player (default: 75.0)")
+                    .defineInRange("bloodMoonBossHealthPerPlayer", 75.0, 0.0, 1000.0);
+
+            bloodMoonBossBaseDamage = builder
+                    .comment("Base attack damage of the Blood Moon Boss (default: 10.0)")
+                    .defineInRange("bloodMoonBossBaseDamage", 10.0, 1.0, 100.0);
+
+            bloodMoonBossDamagePerPlayer = builder
+                    .comment("Additional attack damage per extra nearby player (default: 1.5)")
+                    .defineInRange("bloodMoonBossDamagePerPlayer", 1.5, 0.0, 20.0);
+
+            bloodMoonBossSpeed = builder
+                    .comment("Movement speed attribute of the Blood Moon Boss (default: 0.30)")
+                    .defineInRange("bloodMoonBossSpeed", 0.30, 0.10, 1.0);
+
+            bloodMoonBossKnockbackResistance = builder
+                    .comment("Knockback resistance of the Blood Moon Boss from 0.0 to 1.0 (default: 0.85)")
+                    .defineInRange("bloodMoonBossKnockbackResistance", 0.85, 0.0, 1.0);
+
+            bloodMoonBossExperience = builder
+                    .comment("Experience points dropped upon defeating the Blood Moon Boss (default: 500)")
+                    .defineInRange("bloodMoonBossExperience", 500, 0, 10000);
+
+            bloodMoonBossFreezeTime = builder
+                    .comment("Whether time remains locked at midnight (tick 18000) until the Blood Moon Boss is defeated (default: true)")
+                    .define("bloodMoonBossFreezeTime", true);
+
+            bloodMoonBossSummonMinions = builder
+                    .comment("Whether the boss periodically summons reinforcement minions at 75%, 50%, and 25% health (default: true)")
+                    .define("bloodMoonBossSummonMinions", true);
+
+            bloodMoonBossRoarCooldownSeconds = builder
+                    .comment("Cooldown in seconds between atmospheric roar attacks that inflict Darkness and Slowness (default: 30s)")
+                    .defineInRange("bloodMoonBossRoarCooldownSeconds", 30, 5, 300);
+
+            bloodMoonBossScale = builder
+                    .comment("Visual and hitbox scale multiplier of the Blood Moon Boss (default: 1.7)")
+                    .defineInRange("bloodMoonBossScale", 1.7, 1.0, 3.0);
+
+            bloodMoonBossCleaveEnabled = builder
+                    .comment("Whether the boss deals cleaving frontal cone damage hitting multiple players (default: true)")
+                    .define("bloodMoonBossCleaveEnabled", true);
+
+            bloodMoonBossCleaveAngle = builder
+                    .comment("Frontal cone angle in degrees for cleaving attacks (default: 120.0)")
+                    .defineInRange("bloodMoonBossCleaveAngle", 120.0, 45.0, 360.0);
+
+            bloodMoonBossCleaveRadius = builder
+                    .comment("Maximum reach radius in blocks for cleaving attacks (default: 4.5)")
+                    .defineInRange("bloodMoonBossCleaveRadius", 4.5, 2.0, 10.0);
+
+            bloodMoonBossLeapAttackEnabled = builder
+                    .comment("Whether the boss executes a telegraphed devastating leap slam at distant players/archers (default: true)")
+                    .define("bloodMoonBossLeapAttackEnabled", true);
+
+            bloodMoonBossLeapCooldownSeconds = builder
+                    .comment("Cooldown in seconds between leap slam attacks (default: 14s)")
+                    .defineInRange("bloodMoonBossLeapCooldownSeconds", 14, 5, 60);
+
+            bloodMoonBossShockwaveCooldownSeconds = builder
+                    .comment("Cooldown in seconds between ground fissure/shockwave attacks that knock players into the air (default: 18s)")
+                    .defineInRange("bloodMoonBossShockwaveCooldownSeconds", 18, 5, 60);
+
+            bloodMoonBossPhase2Enabled = builder
+                    .comment("Whether the boss enters Phase 2 'Furia del Eclipse' when below 40% health (default: true)")
+                    .define("bloodMoonBossPhase2Enabled", true);
             builder.pop();
 
             builder.pop();

@@ -18,5 +18,10 @@
   "enjoy_nights.ward.button.activate": "Activar",
   "enjoy_nights.ward.button.deactivate": "Desactivar",
   "enjoy_nights.ward.status.active": "ESTADO: ACTIVO",
-  "enjoy_nights.ward.status.inactive": "Inserta %s fragmentos de amatista para activar"
+  "enjoy_nights.ward.status.inactive": "Inserta %s fragmentos de amatista para activar",
+
+  "enjoy_nights.boss.spawn": "Una presencia aterradora desciende... ¡%s ha despertado! ¡El tiempo se ha detenido hasta su derrota!",
+  "enjoy_nights.boss.subtitle": "La medianoche se ha congelado. Derrota al heraldo para restaurar el amanecer.",
+  "enjoy_nights.boss.defeated": "¡%s ha sido derrotado! El tiempo vuelve a fluir y el asedio de la Luna de Sangre retrocede.",
+  "enjoy_nights.boss.phase2": "¡[%s] entra en la Furia del Eclipse! ¡Sus ataques y movimientos se han enfurecido!"
 }

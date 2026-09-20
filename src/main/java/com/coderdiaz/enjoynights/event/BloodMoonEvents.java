@@ -1,9 +1,10 @@
 package com.coderdiaz.enjoynights.event;
 
 import com.coderdiaz.enjoynights.config.EnjoyNightsConfig;
-import com.coderdiaz.enjoynights.ward.WardingSavedData;
+import com.coderdiaz.enjoynights.entity.BloodMoonBossManager;
 import com.coderdiaz.enjoynights.entity.ai.ZombieSiegeBreakGoal;
 import com.coderdiaz.enjoynights.util.NightAndMoonHelper;
+import com.coderdiaz.enjoynights.ward.WardingSavedData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -47,6 +48,15 @@ public class BloodMoonEvents {
         if (event.getEntity() instanceof Zombie zombie) {
             zombie.goalSelector.addGoal(1, new ZombieSiegeBreakGoal(zombie));
             zombie.targetSelector.addGoal(1, new com.coderdiaz.enjoynights.entity.ai.BloodMoonSiegeTargetGoal(zombie));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDamage(net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post event) {
+        if (event.getEntity().getTags().contains(BloodMoonBossManager.TAG_BOSS)) {
+            if (event.getSource().getEntity() instanceof net.minecraft.world.entity.player.Player player) {
+                BloodMoonBossManager.recordPlayerDamage(player.getUUID(), event.getNewDamage());
+            }
         }
     }
 
@@ -97,6 +107,9 @@ public class BloodMoonEvents {
         } else {
             siegeWaveTickCounter = 0;
         }
+
+        // Blood Moon Boss cycle (spawns at midnight 18000, freezes time, scales with players, boss bar)
+        BloodMoonBossManager.tick(level);
 
         // Sporadic atmospheric Darkness pulse (torches flicker and darkness closes in for ~1.5s every 2-3 minutes to unnerve player)
         if (isBloodMoon && EnjoyNightsConfig.SERVER.bloodMoonDarknessPulseEnabled.get()) {
