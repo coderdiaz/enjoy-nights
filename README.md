@@ -33,7 +33,7 @@ A mod for **Minecraft** and **NeoForge** that transforms the night from somethin
 ### 5. Dynamic Lunar Phases
 Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * **New Moon (Phase 4 - Every 8 Nights):**
-  * Low outdoor visibility: dense dark fog and ambient darkness effects when exposed under the open sky.
+  * Low outdoor visibility: dense dark fog when exposed under the open sky.
   * **Increased Stealth:** Reduces the range at which monsters can detect the player by **60%** (`newMoonStealthFactor = 0.40`), perfect for sneaking around unnoticed.
 * **Full Moon (Phase 0 - Every 8 Nights):**
   * Monsters become more aggressive, spawning with an extended follow range (+16 blocks).
@@ -128,6 +128,8 @@ All mechanics are 100% customizable:
         bloodMoonWaveIntervalSeconds = 30
         # Maximum nearby hostile mobs before pausing extra spawns (anti-lag cap)
         bloodMoonMaxNearbyMobs = 16
+        # Whether players outdoors during Blood Moon experience sporadic brief darkness pulses
+        bloodMoonDarknessPulseEnabled = true
 ```
 
 ### Client Configuration (`config/enjoy_nights-client.toml`)
@@ -146,6 +148,10 @@ All mechanics are 100% customizable:
     bloodMoonParticles = true
     # Play disturbing hallucinations and ambient sounds when paranoia is triggered
     paranoiaSoundsEnabled = true
+    # Play phantom footsteps rushing behind player when stopping or mining during Blood Moon
+    bloodMoonPhantomFootstepsEnabled = true
+    # Red atmospheric sky & cloud tint passed to shaders during Blood Moon (0.0 to 1.0, default: 0.35)
+    bloodMoonShaderAtmosphereIntensity = 0.35
 ```
 
 ---
