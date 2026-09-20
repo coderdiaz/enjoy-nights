@@ -34,6 +34,7 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue bloodMoonMaxNearbyMobs;
         public final ModConfigSpec.IntValue bloodMoonWaveIntervalSeconds;
         public final ModConfigSpec.BooleanValue bloodMoonDarknessPulseEnabled;
+        public final ModConfigSpec.BooleanValue bloodMoonIgnoreTorches;
 
         public Server(ModConfigSpec.Builder builder) {
             builder.comment("Server-side configurations for Enjoy Nights!").push("server");
@@ -148,6 +149,10 @@ public class EnjoyNightsConfig {
             bloodMoonDarknessPulseEnabled = builder
                     .comment("Whether players outdoors during a Blood Moon experience sudden sporadic 1.75-second darkness pulses and Warden heartbeats every 2-3 minutes to unnerve the player")
                     .define("bloodMoonDarknessPulseEnabled", true);
+
+            bloodMoonIgnoreTorches = builder
+                    .comment("Whether monsters during a Blood Moon can spawn regardless of light levels emitted by torches and lanterns outside protected wards (default: true)")
+                    .define("bloodMoonIgnoreTorches", true);
             builder.pop();
 
             builder.pop();

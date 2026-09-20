@@ -230,6 +230,15 @@ public class BloodMoonEvents {
                 }
                 return;
             }
+
+            // Outside ward during Blood Moon: ignore torches / light level
+            if (NightAndMoonHelper.isBloodMoon(serverLevel) && EnjoyNightsConfig.SERVER.bloodMoonIgnoreTorches.get()) {
+                if (event.getEntity() instanceof Monster monster) {
+                    if (monster.checkSpawnObstruction(serverLevel)) {
+                        event.setResult(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck.Result.SUCCEED);
+                    }
+                }
+            }
         }
     }
 
