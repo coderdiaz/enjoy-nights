@@ -14,8 +14,10 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.level.Level;
@@ -43,6 +45,21 @@ public class BloodMoonEvents {
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) {
             return;
+        }
+
+        // Cleanup check for lingering night mobs loading from chunks
+        if (event.getEntity() instanceof Mob mob) {
+            boolean hasExtraTag = mob.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+            boolean hasFireSkeleton = mob.getTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
+
+            if (hasExtraTag || hasFireSkeleton) {
+                // If daytime has arrived or if outside Blood Moon for extra siege mobs, discard immediately!
+                if (!NightAndMoonHelper.isNight(event.getLevel()) || (!NightAndMoonHelper.isBloodMoon(event.getLevel()) && hasExtraTag)) {
+                    mob.discard();
+                    event.setCanceled(true);
+                    return;
+                }
+            }
         }
 
         if (event.getEntity() instanceof Zombie zombie) {
@@ -209,12 +226,12 @@ public class BloodMoonEvents {
 
                 // Ensure reasonable vertical distance from player and valid air block
                 if (Math.abs(spawnY - player.getBlockY()) <= 12 && level.getBlockState(spawnPos).isAir()) {
-                    Zombie siegeZombie = EntityType.ZOMBIE.create(level, EntitySpawnReason.EVENT);
+                    Zombie siegeZombie = EntityType.ZOMBIE.create(level, EntitySpawnReason.REINFORCEMENT);
                     if (siegeZombie != null) {
                         siegeZombie.setPos(spawnX + 0.5, (double) spawnY, spawnZ + 0.5);
                         siegeZombie.setYRot(random.nextFloat() * 360.0F);
                         siegeZombie.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
-                        siegeZombie.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), EntitySpawnReason.EVENT, null);
+                        siegeZombie.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), EntitySpawnReason.REINFORCEMENT, null);
                         siegeZombie.setTarget(player);
                         level.addFreshEntity(siegeZombie);
                     }
@@ -299,6 +316,35 @@ public class BloodMoonEvents {
         for (ServerPlayer player : level.players()) {
             player.sendSystemMessage(message);
         }
+
+        // Active purge of lingering siege zombies and extra spawns
+        purgeNightMobs(level, false);
+    }
+
+    /**
+     * Purges lingering night mobs from the specified level.
+     * @param level ServerLevel to scan
+     * @param includePowered whether to also purge non-boss powered mobs (used in admin /enjoynights purge)
+     * @return number of entities purged
+     */
+    public static int purgeNightMobs(ServerLevel level, boolean includePowered) {
+        int purgedCount = 0;
+        for (Entity entity : level.getAllEntities()) {
+            if (entity instanceof Mob mob && mob.isAlive()) {
+                if (mob.getTags().contains(BloodMoonBossManager.TAG_BOSS)) {
+                    continue; // Preserve active boss
+                }
+                boolean hasExtraTag = mob.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+                boolean hasFireSkeleton = mob.getTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
+                boolean hasPowered = includePowered && mob.getTags().contains(LunarPhaseEvents.TAG_POWERED_MOB);
+
+                if (hasExtraTag || hasFireSkeleton || hasPowered) {
+                    mob.discard();
+                    purgedCount++;
+                }
+            }
+        }
+        return purgedCount;
     }
 
     @SubscribeEvent

@@ -21,6 +21,9 @@ public class EnjoyNightsCommands {
                                         .executes(ctx -> startBloodMoon(ctx.getSource())))
                                 .then(Commands.literal("stop")
                                         .executes(ctx -> stopBloodMoon(ctx.getSource()))))
+                        .then(Commands.literal("purge")
+                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .executes(ctx -> purgeLingeringMobs(ctx.getSource())))
         );
     }
 
@@ -63,5 +66,16 @@ public class EnjoyNightsCommands {
         NightAndMoonHelper.setForceBloodMoon(false);
         source.sendSuccess(() -> Component.literal("Luna de Sangre forzada desactivada.").withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    private static int purgeLingeringMobs(CommandSourceStack source) {
+        int totalPurged = 0;
+        for (ServerLevel level : source.getServer().getAllLevels()) {
+            totalPurged += com.coderdiaz.enjoynights.event.BloodMoonEvents.purgeNightMobs(level, true);
+        }
+        final int count = totalPurged;
+        source.sendSuccess(() -> Component.translatable("enjoy_nights.command.purge_success", count)
+                .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD), true);
+        return totalPurged;
     }
 }

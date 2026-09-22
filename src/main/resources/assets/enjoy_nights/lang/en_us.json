@@ -23,5 +23,6 @@
   "enjoy_nights.boss.spawn": "A terrifying presence descends... %s has awakened! Time is frozen until defeat!",
   "enjoy_nights.boss.subtitle": "Midnight has frozen. Slay the harbinger to restore the dawn.",
   "enjoy_nights.boss.defeated": "%s has been vanquished! Time begins to flow once more and the Blood Moon recedes.",
-  "enjoy_nights.boss.phase2": "[%s] Enters the Eclipse Fury! Attacks and movements are empowered!"
+  "enjoy_nights.boss.phase2": "[%s] Enters the Eclipse Fury! Attacks and movements are empowered!",
+  "enjoy_nights.command.purge_success": "[Enjoy Nights] Successfully purged %s lingering night mobs across all loaded dimensions."
 }

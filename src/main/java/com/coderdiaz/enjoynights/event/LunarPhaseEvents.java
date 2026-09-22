@@ -19,6 +19,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
+import net.neoforged.neoforge.event.entity.living.MobDespawnEvent;
 
 public class LunarPhaseEvents {
     public static final String TAG_POWERED_MOB = "enjoy_nights:powered";
@@ -128,12 +129,12 @@ public class LunarPhaseEvents {
                                     random.nextInt(5) - 2
                             );
                             if (serverLevel.getBlockState(companionPos).isAir()) {
-                                Mob companion = (Mob) monster.getType().create(serverLevel, EntitySpawnReason.EVENT);
+                                Mob companion = (Mob) monster.getType().create(serverLevel, EntitySpawnReason.NATURAL);
                                 if (companion != null) {
                                     companion.setPos(companionPos.getX() + 0.5, (double) companionPos.getY(), companionPos.getZ() + 0.5);
                                     companion.setYRot(random.nextFloat() * 360f);
                                     companion.addTag(TAG_EXTRA_SPAWN);
-                                    companion.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(companionPos), EntitySpawnReason.EVENT, null);
+                                    companion.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(companionPos), EntitySpawnReason.NATURAL, null);
                                     serverLevel.addFreshEntity(companion);
                                 }
                             }
@@ -178,6 +179,33 @@ public class LunarPhaseEvents {
             // Guarantee that flame skeletons never drop any bow or chainmail helmet
             event.getDrops().removeIf(drop -> drop.getItem().is(net.minecraft.world.item.Items.BOW)
                     || drop.getItem().is(net.minecraft.world.item.Items.CHAINMAIL_HELMET));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMobDespawn(MobDespawnEvent event) {
+        Mob mob = event.getEntity();
+        if (mob.level().isClientSide() || !(mob.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        boolean isExtraSpawn = mob.getTags().contains(TAG_EXTRA_SPAWN);
+        boolean isFireSkeleton = mob.getTags().contains(TAG_FIRE_SKELETON);
+
+        if (isExtraSpawn || isFireSkeleton) {
+            // If daytime has arrived, immediately force despawn of these night mobs
+            if (!NightAndMoonHelper.isNight(level)) {
+                event.setResult(MobDespawnEvent.Result.ALLOW);
+                return;
+            }
+
+            // Outside Blood Moon, force despawn extra siege/companion mobs if distant from players
+            if (!NightAndMoonHelper.isBloodMoon(level) && isExtraSpawn) {
+                Player nearest = level.getNearestPlayer(mob, 40.0);
+                if (nearest == null) {
+                    event.setResult(MobDespawnEvent.Result.ALLOW);
+                }
+            }
         }
     }
 }

@@ -23,5 +23,6 @@
   "enjoy_nights.boss.spawn": "Una presencia aterradora desciende... ¡%s ha despertado! ¡El tiempo se ha detenido hasta su derrota!",
   "enjoy_nights.boss.subtitle": "La medianoche se ha congelado. Derrota al heraldo para restaurar el amanecer.",
   "enjoy_nights.boss.defeated": "¡%s ha sido derrotado! El tiempo vuelve a fluir y el asedio de la Luna de Sangre retrocede.",
-  "enjoy_nights.boss.phase2": "¡[%s] entra en la Furia del Eclipse! ¡Sus ataques y movimientos se han enfurecido!"
+  "enjoy_nights.boss.phase2": "¡[%s] entra en la Furia del Eclipse! ¡Sus ataques y movimientos se han enfurecido!",
+  "enjoy_nights.command.purge_success": "[Enjoy Nights] Se han purgado con éxito %s mobs residuales de la noche en todas las dimensiones cargadas."
 }
