@@ -77,19 +77,40 @@ public class BloodMoonBossManager {
         }
 
         boolean isBloodMoon = NightAndMoonHelper.isBloodMoon(level);
+        boolean isNight = NightAndMoonHelper.isNight(level);
+        long dayTime = level.getDayTime();
+        long timeOfDay = dayTime % 24000L;
 
-        if (!isBloodMoon) {
+        // Dawn or Blood Moon End check: if morning arrived (tick 23500+ or daytime) or Blood Moon has ended
+        if (!isBloodMoon || !isNight || timeOfDay >= 23500L) {
             if (activeBossUuid != null) {
-                cleanupBossBar();
-                activeBossUuid = null;
+                Entity entity = level.getEntity(activeBossUuid);
+                if (entity instanceof WitherSkeleton boss && boss.isAlive()) {
+                    if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get()) {
+                        despawnBossOnDawn(level, boss);
+                    } else {
+                        cleanupBossBar();
+                        activeBossUuid = null;
+                    }
+                } else {
+                    cleanupBossBar();
+                    activeBossUuid = null;
+                }
             }
+
+            // Safety cleanup for any lingering boss entity in loaded chunks if despawnAtDawn is true
+            if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get()) {
+                for (Entity entity : level.getAllEntities()) {
+                    if (entity instanceof WitherSkeleton boss && boss.isAlive() && boss.getTags().contains(TAG_BOSS)) {
+                        despawnBossOnDawn(level, boss);
+                    }
+                }
+            }
+
             freezeTimeRemainingTicks = 0;
             bossDefeatedThisNight = false;
             return;
         }
-
-        long dayTime = level.getDayTime();
-        long timeOfDay = dayTime % 24000L;
 
         // Midnight check: legacy automatic spawn only if ritual is NOT required
         if (timeOfDay >= 18000L && activeBossUuid == null && !bossDefeatedThisNight && EnjoyNightsConfig.SERVER.bloodMoonBossEnabled.get()) {
@@ -124,7 +145,7 @@ public class BloodMoonBossManager {
                             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_DEACTIVATE, SoundSource.AMBIENT, 1.2F, 0.8F);
                         }
                     }
-                } else if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get() && freezeTimeRemainingTicks <= 0) {
+                } else if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get()) {
                     // Natural time flow toward dawn: check if morning arrived (tick 23500+ or daytime)
                     if (timeOfDay >= 23500L || !NightAndMoonHelper.isNight(level)) {
                         despawnBossOnDawn(level, boss);
@@ -368,7 +389,26 @@ public class BloodMoonBossManager {
         level.playSound(null, spawnPos.getX(), spawnPos.getY(), spawnPos.getZ(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER, 2.0F, 0.6F);
     }
 
-    private static void despawnBossOnDawn(ServerLevel level, WitherSkeleton boss) {
+    public static void despawnActiveBoss(ServerLevel level) {
+        if (activeBossUuid != null) {
+            Entity entity = level.getEntity(activeBossUuid);
+            if (entity instanceof WitherSkeleton boss && boss.isAlive()) {
+                despawnBossOnDawn(level, boss);
+                return;
+            }
+        }
+        for (Entity e : level.getAllEntities()) {
+            if (e instanceof WitherSkeleton boss && boss.isAlive() && e.getTags().contains(TAG_BOSS)) {
+                despawnBossOnDawn(level, boss);
+                return;
+            }
+        }
+        cleanupBossBar();
+        activeBossUuid = null;
+        freezeTimeRemainingTicks = 0;
+    }
+
+    public static void despawnBossOnDawn(ServerLevel level, WitherSkeleton boss) {
         // Darkness and Blindness fear wave to nearby players
         AABB impactBox = boss.getBoundingBox().inflate(64.0);
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, impactBox)) {

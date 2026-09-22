@@ -51,6 +51,7 @@ public class BloodMoonEvents {
         if (event.getEntity() instanceof Mob mob) {
             boolean hasExtraTag = mob.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
             boolean hasFireSkeleton = mob.getTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
+            boolean hasBossTag = mob.getTags().contains(BloodMoonBossManager.TAG_BOSS);
 
             if (hasExtraTag || hasFireSkeleton) {
                 // If daytime has arrived or if outside Blood Moon for extra siege mobs, discard immediately!
@@ -58,6 +59,17 @@ public class BloodMoonEvents {
                     mob.discard();
                     event.setCanceled(true);
                     return;
+                }
+            }
+
+            if (hasBossTag) {
+                // If chunk is loading during daytime or outside Blood Moon, discard lingering boss immediately!
+                if (!NightAndMoonHelper.isNight(event.getLevel()) || !NightAndMoonHelper.isBloodMoon(event.getLevel())) {
+                    if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get()) {
+                        mob.discard();
+                        event.setCanceled(true);
+                        return;
+                    }
                 }
             }
         }
@@ -332,7 +344,11 @@ public class BloodMoonEvents {
         for (Entity entity : level.getAllEntities()) {
             if (entity instanceof Mob mob && mob.isAlive()) {
                 if (mob.getTags().contains(BloodMoonBossManager.TAG_BOSS)) {
-                    continue; // Preserve active boss
+                    if (includePowered || (!NightAndMoonHelper.isNight(level) && EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get() && !BloodMoonBossManager.isBossActive())) {
+                        mob.discard();
+                        purgedCount++;
+                    }
+                    continue; // Active boss is handled by BloodMoonBossManager
                 }
                 boolean hasExtraTag = mob.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
                 boolean hasFireSkeleton = mob.getTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
