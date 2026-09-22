@@ -1,6 +1,7 @@
 package com.coderdiaz.enjoynights.init;
 
 import com.coderdiaz.enjoynights.EnjoyNights;
+import com.coderdiaz.enjoynights.block.CrimsonAltarBlock;
 import com.coderdiaz.enjoynights.block.WardingTotemBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -18,6 +19,16 @@ public class ModBlocks {
                     .sound(SoundType.STONE)
                     .lightLevel(state -> state.getValue(WardingTotemBlock.ACTIVE) ? 10 : 2)
                     .noLootTable()
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<CrimsonAltarBlock> CRIMSON_ALTAR = BLOCKS.registerBlock(
+            "crimson_altar",
+            CrimsonAltarBlock::new,
+            () -> BlockBehaviour.Properties.of()
+                    .strength(4.0F, 1200.0F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(state -> state.getValue(CrimsonAltarBlock.RITUAL_ACTIVE) ? 12 : 3)
                     .requiresCorrectToolForDrops()
     );
 }

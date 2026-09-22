@@ -20,6 +20,13 @@
   "enjoy_nights.ward.status.active": "ESTADO: ACTIVO",
   "enjoy_nights.ward.status.inactive": "Inserta %s fragmentos de amatista para activar",
 
+  "block.enjoy_nights.crimson_altar": "Altar Carmesí",
+  "item.enjoy_nights.crimson_altar": "Altar Carmesí",
+  "enjoy_nights.altar.error.caves": "El ritual de sangre exige estar en la superficie bajo el cielo abierto de la noche. ¡No puede realizarse bajo tierra!",
+  "enjoy_nights.altar.error.not_blood_moon": "El Altar Carmesí permanece inerte. Solo despierta bajo la luz de la Luna de Sangre.",
+  "enjoy_nights.altar.error.already_active": "¡El Heraldo Carmesí ya camina sobre estas tierras!",
+  "enjoy_nights.altar.ritual_started": "¡El ritual de sangre ha comenzado! El Heraldo Carmesí está despertando...",
+
   "enjoy_nights.boss.spawn": "Una presencia aterradora desciende... ¡%s ha despertado! ¡El tiempo se ha detenido hasta su derrota!",
   "enjoy_nights.boss.subtitle": "La medianoche se ha congelado. Derrota al heraldo para restaurar el amanecer.",
   "enjoy_nights.boss.summoned_ritual": "¡%s ha invocado al Heraldo Carmesí en [%s, %s, %s]! ¡Poder calibrado para %s jugador(es) a la redonda!",

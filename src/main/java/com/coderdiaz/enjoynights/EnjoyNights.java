@@ -63,6 +63,7 @@ public class EnjoyNights {
     private void addCreative(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == net.minecraft.world.item.CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(com.coderdiaz.enjoynights.init.ModItems.WARDING_TOTEM.get());
+            event.accept(com.coderdiaz.enjoynights.init.ModItems.CRIMSON_ALTAR.get());
         }
     }
 

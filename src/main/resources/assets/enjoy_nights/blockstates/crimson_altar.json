@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "ritual_active=false": {
+      "model": "enjoy_nights:block/crimson_altar"
+    },
+    "ritual_active=true": {
+      "model": "enjoy_nights:block/crimson_altar_active"
+    }
+  }
+}

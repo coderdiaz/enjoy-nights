@@ -20,6 +20,13 @@
   "enjoy_nights.ward.status.active": "STATUS: ACTIVE",
   "enjoy_nights.ward.status.inactive": "Insert %s Amethyst Shards to activate",
 
+  "block.enjoy_nights.crimson_altar": "Crimson Altar",
+  "item.enjoy_nights.crimson_altar": "Crimson Altar",
+  "enjoy_nights.altar.error.caves": "The blood ritual demands the open sky of the surface. It cannot be performed underground!",
+  "enjoy_nights.altar.error.not_blood_moon": "The Crimson Altar remains dormant. It only awakens under the light of the Blood Moon.",
+  "enjoy_nights.altar.error.already_active": "The Crimson Harbinger already walks these lands!",
+  "enjoy_nights.altar.ritual_started": "The blood ritual has commenced! The Crimson Harbinger is awakening...",
+
   "enjoy_nights.boss.spawn": "A terrifying presence descends... %s has awakened! Time is frozen until defeat!",
   "enjoy_nights.boss.subtitle": "Midnight has frozen. Slay the harbinger to restore the dawn.",
   "enjoy_nights.boss.summoned_ritual": "%s has summoned the Crimson Harbinger at [%s, %s, %s]! Power scaled for %s player(s) nearby!",

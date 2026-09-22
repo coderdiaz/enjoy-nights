@@ -14,4 +14,9 @@ public class ModItems {
             ModBlocks.WARDING_TOTEM,
             props -> props.rarity(Rarity.RARE).stacksTo(16)
     );
+
+    public static final DeferredItem<BlockItem> CRIMSON_ALTAR = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CRIMSON_ALTAR,
+            props -> props.rarity(Rarity.EPIC).stacksTo(16)
+    );
 }

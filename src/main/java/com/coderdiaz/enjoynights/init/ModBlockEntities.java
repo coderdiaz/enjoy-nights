@@ -1,6 +1,7 @@
 package com.coderdiaz.enjoynights.init;
 
 import com.coderdiaz.enjoynights.EnjoyNights;
+import com.coderdiaz.enjoynights.block.entity.CrimsonAltarBlockEntity;
 import com.coderdiaz.enjoynights.block.entity.WardingTotemBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -19,6 +20,14 @@ public class ModBlockEntities {
             () -> new BlockEntityType<>(
                     WardingTotemBlockEntity::new,
                     ModBlocks.WARDING_TOTEM.get()
+            )
+    );
+
+    public static final Supplier<BlockEntityType<CrimsonAltarBlockEntity>> CRIMSON_ALTAR = BLOCK_ENTITIES.register(
+            "crimson_altar",
+            () -> new BlockEntityType<>(
+                    CrimsonAltarBlockEntity::new,
+                    ModBlocks.CRIMSON_ALTAR.get()
             )
     );
 }
