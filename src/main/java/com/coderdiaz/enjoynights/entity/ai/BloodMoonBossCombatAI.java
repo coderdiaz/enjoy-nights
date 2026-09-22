@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -25,28 +26,33 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Controller for Elden Ring-styled boss combat behavior for El Heraldo Carmesí.
- * Handles target commitment and rotation, telegraphed movesets (leap slam, ground shockwave,
- * repulsion burst), conical cleave attacks, and Phase 2 "Furia del Eclipse".
+ * Handles target commitment and rotation, telegraphed movesets (charged lunge sweep, leap slam,
+ * ground shockwave, repulsion burst), punish windows (recovery frames), and Phase 2 "Furia del Eclipse".
  */
 public class BloodMoonBossCombatAI {
 
     public enum WindupType {
         NONE,
         LEAP,
-        SHOCKWAVE
+        SHOCKWAVE,
+        CHARGED_LUNGE
     }
 
     private final WitherSkeleton boss;
 
     private int targetCommitmentTicks = 0;
-    private int leapCooldown = 120; // Initial delay before first leap
-    private int shockwaveCooldown = 160;
+    private int leapCooldown = 140; // Initial delay before first leap
+    private int shockwaveCooldown = 180;
+    private int chargedAttackCooldown = 100; // Initial delay before first charged lunge
     private int repulsionCooldown = 60;
     private int meleeSwingCooldown = 0;
+    private int recoveryTicks = 0;
+    private int meleeComboStep = 0;
 
     private int windupTicks = 0;
     private WindupType activeWindup = WindupType.NONE;
     private Vec3 leapTargetPos = null;
+    private Player chargedLungeTarget = null;
     private boolean isInLeap = false;
     private boolean phase2Active = false;
 
@@ -106,44 +112,91 @@ public class BloodMoonBossCombatAI {
             return; // Pause other actions while flying through the air
         }
 
-        // 4. Handle active telegraphed windup
+        // 4. Handle recovery pause (Punish window for players after heavy boss moves)
+        if (recoveryTicks > 0) {
+            recoveryTicks--;
+            boss.getNavigation().stop();
+            boss.setDeltaMovement(boss.getDeltaMovement().x * 0.4, boss.getDeltaMovement().y, boss.getDeltaMovement().z * 0.4);
+
+            if (recoveryTicks % 4 == 0) {
+                level.sendParticles(
+                        ParticleTypes.SMOKE,
+                        boss.getX(),
+                        boss.getY() + 0.8,
+                        boss.getZ(),
+                        1,
+                        0.15,
+                        0.15,
+                        0.15,
+                        0.01
+                );
+            }
+            return; // Free window for players to counterattack
+        }
+
+        // 5. Handle active telegraphed windup
         if (windupTicks > 0) {
             windupTicks--;
             boss.getNavigation().stop();
             boss.setDeltaMovement(0, boss.getDeltaMovement().y, 0);
 
-            // Emit warning smoke at feet
-            level.sendParticles(
-                    ParticleTypes.CAMPFIRE_COSY_SMOKE,
-                    boss.getX(),
-                    boss.getY() + 0.1,
-                    boss.getZ(),
-                    2,
-                    0.25,
-                    0.05,
-                    0.25,
-                    0.01
-            );
+            if (activeWindup == WindupType.CHARGED_LUNGE) {
+                // Dynamic tracking: constantly rotate and face the target player during charge
+                if (chargedLungeTarget != null && chargedLungeTarget.isAlive()) {
+                    boss.getLookControl().setLookAt(chargedLungeTarget.getX(), chargedLungeTarget.getEyeY(), chargedLungeTarget.getZ(), 60.0F, 60.0F);
+                    Vec3 diff = chargedLungeTarget.position().subtract(boss.position());
+                    float targetYaw = (float) (Mth.atan2(diff.z, diff.x) * (180.0 / Math.PI)) - 90.0F;
+                    boss.setYRot(targetYaw);
+                    boss.setYHeadRot(targetYaw);
+                    boss.yBodyRot = targetYaw;
+                }
+
+                // Periodic sword adjustment animation
+                if (windupTicks % 6 == 0) {
+                    boss.swing(InteractionHand.MAIN_HAND);
+                }
+
+                // Buildup particles
+                level.sendParticles(ParticleTypes.ENCHANT, boss.getX(), boss.getY() + 1.2, boss.getZ(), 4, 0.4, 0.6, 0.4, 0.5);
+                level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, boss.getX(), boss.getY() + 1.2, boss.getZ(), 2, 0.3, 0.4, 0.3, 0.02);
+                level.sendParticles(ParticleTypes.CRIT, boss.getX(), boss.getY() + 0.2, boss.getZ(), 3, 0.3, 0.1, 0.3, 0.04);
+            } else {
+                // Warning smoke at feet for leap / shockwave
+                level.sendParticles(
+                        ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                        boss.getX(),
+                        boss.getY() + 0.1,
+                        boss.getZ(),
+                        2,
+                        0.25,
+                        0.05,
+                        0.25,
+                        0.01
+                );
+            }
 
             if (windupTicks == 0) {
                 if (activeWindup == WindupType.LEAP) {
                     performLeapLaunch(level);
                 } else if (activeWindup == WindupType.SHOCKWAVE) {
                     performShockwaveImpact(level);
+                } else if (activeWindup == WindupType.CHARGED_LUNGE) {
+                    performChargedLungeStrike(level);
                 }
                 activeWindup = WindupType.NONE;
             }
             return; // Pause actions during telegraph windup
         }
 
-        // 5. Update ability cooldowns
+        // 6. Update ability cooldowns
         if (leapCooldown > 0) leapCooldown--;
         if (shockwaveCooldown > 0) shockwaveCooldown--;
+        if (chargedAttackCooldown > 0) chargedAttackCooldown--;
         if (repulsionCooldown > 0) repulsionCooldown--;
         if (meleeSwingCooldown > 0) meleeSwingCooldown--;
         if (targetCommitmentTicks > 0) targetCommitmentTicks--;
 
-        // 6. Target rotation and commitment system
+        // 7. Target rotation and commitment system
         updateTargetCommitment(level);
 
         Player currentTarget = null;
@@ -151,7 +204,7 @@ public class BloodMoonBossCombatAI {
             currentTarget = p;
         }
 
-        // 7. Ability: Repulsion Wave (Anti-Gank if 3+ players crowd the boss)
+        // 8. Ability: Repulsion Wave (Anti-Gank if 3+ players crowd the boss)
         if (repulsionCooldown <= 0) {
             AABB crowdBox = boss.getBoundingBox().inflate(3.5);
             List<Player> nearbyCrowd = level.getEntitiesOfClass(Player.class, crowdBox, pl -> !pl.isSpectator() && pl.isAlive());
@@ -161,35 +214,48 @@ public class BloodMoonBossCombatAI {
             }
         }
 
-        // 8. Ability: Devastating Leap (Anti-Campers / Anti-Archers)
+        // 9. Ability: Devastating Leap (Anti-Campers / Anti-Archers at long distance)
         if (currentTarget != null && EnjoyNightsConfig.SERVER.bloodMoonBossLeapAttackEnabled.get() && leapCooldown <= 0) {
             double dist = boss.distanceTo(currentTarget);
-            if (dist >= 7.5 && dist <= 24.0) {
+            if (dist >= 8.0 && dist <= 24.0) {
                 activeWindup = WindupType.LEAP;
-                windupTicks = 15; // 0.75s windup telegraph
+                windupTicks = 22; // 1.1s windup telegraph
                 leapTargetPos = currentTarget.position();
                 level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 1.3F, 1.7F);
                 return;
             }
         }
 
-        // 9. Ability: Ground Shockwave / Fissure (Knockup Vertical)
+        // 10. Ability: Telegraphed Charged Lunge & Sweep (Mid-range power move)
+        if (currentTarget != null && EnjoyNightsConfig.SERVER.bloodMoonBossChargedAttackEnabled.get() && chargedAttackCooldown <= 0) {
+            double dist = boss.distanceTo(currentTarget);
+            if (dist >= 2.5 && dist <= 8.5) {
+                activeWindup = WindupType.CHARGED_LUNGE;
+                windupTicks = 30; // 1.5s charge telegraph (clear reaction window)
+                chargedLungeTarget = currentTarget;
+                level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.HOSTILE, 1.3F, 0.8F);
+                level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 1.4F, 0.85F);
+                return;
+            }
+        }
+
+        // 11. Ability: Ground Shockwave / Fissure (Close range knockup)
         if (currentTarget != null && shockwaveCooldown <= 0) {
             double dist = boss.distanceTo(currentTarget);
-            if (dist <= 4.5) {
+            if (dist <= 4.0) {
                 activeWindup = WindupType.SHOCKWAVE;
-                windupTicks = 13; // ~0.65s telegraph
+                windupTicks = 20; // 1.0s telegraph
                 level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.2F, 0.5F);
                 return;
             }
         }
 
-        // 10. Melee Cleave Attack (Frontal 120-degree cone)
-        if (currentTarget != null && EnjoyNightsConfig.SERVER.bloodMoonBossCleaveEnabled.get() && meleeSwingCooldown <= 0) {
+        // 12. Melee Attacks (Alternating basic strike and sweeping cleave)
+        if (currentTarget != null && meleeSwingCooldown <= 0) {
             double radius = EnjoyNightsConfig.SERVER.bloodMoonBossCleaveRadius.get();
             if (boss.distanceTo(currentTarget) <= radius) {
-                executeCleaveAttack(level, currentTarget, radius);
-                meleeSwingCooldown = phase2Active ? 14 : 20; // 30% faster swings in phase 2
+                executeMeleeAttack(level, currentTarget, radius);
+                meleeSwingCooldown = phase2Active ? 26 : 34; // ~1.3s to 1.7s cadence
             }
         }
     }
@@ -229,7 +295,7 @@ public class BloodMoonBossCombatAI {
                     .ifPresent(boss::setTarget);
         }
 
-        targetCommitmentTicks = 100; // Commit for 5 seconds to avoid jittering
+        targetCommitmentTicks = 60; // Commit for 3 seconds to avoid jittering while remaining responsive
     }
 
     private void performLeapLaunch(ServerLevel level) {
@@ -260,7 +326,7 @@ public class BloodMoonBossCombatAI {
         level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, boss.getX(), boss.getY() + 0.2, boss.getZ(), 35, 1.6, 0.2, 1.6, 0.15);
         level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 1.5F, 0.75F);
 
-        float baseDmg = (float) boss.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.25F;
+        float baseDmg = (float) boss.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.20F;
         AABB impactBox = boss.getBoundingBox().inflate(6.0);
         List<Player> victims = level.getEntitiesOfClass(Player.class, impactBox, p -> !p.isSpectator() && p.isAlive());
 
@@ -285,8 +351,9 @@ public class BloodMoonBossCombatAI {
         }
 
         int cdSec = EnjoyNightsConfig.SERVER.bloodMoonBossLeapCooldownSeconds.get();
-        leapCooldown = (phase2Active ? cdSec / 2 : cdSec) * 20;
-        targetCommitmentTicks = 0; // Rotate target immediately after slam
+        leapCooldown = (phase2Active ? Math.max(5, cdSec / 2) : cdSec) * 20;
+        recoveryTicks = EnjoyNightsConfig.SERVER.bloodMoonBossRecoveryTicks.get();
+        targetCommitmentTicks = 0; // Rotate target after slam
     }
 
     private void performShockwaveImpact(ServerLevel level) {
@@ -300,7 +367,7 @@ public class BloodMoonBossCombatAI {
         List<Player> nearby = level.getEntitiesOfClass(Player.class, box, p -> !p.isSpectator() && p.isAlive());
 
         for (Player p : nearby) {
-            p.hurtServer(level, level.damageSources().mobAttack(boss), baseDmg * 0.90F);
+            p.hurtServer(level, level.damageSources().mobAttack(boss), baseDmg * 0.75F);
             // Knockup into air
             Vec3 motion = p.getDeltaMovement();
             p.setDeltaMovement(motion.x * 0.5, 0.72, motion.z * 0.5);
@@ -308,8 +375,76 @@ public class BloodMoonBossCombatAI {
         }
 
         int cdSec = EnjoyNightsConfig.SERVER.bloodMoonBossShockwaveCooldownSeconds.get();
-        shockwaveCooldown = (phase2Active ? cdSec / 2 : cdSec) * 20;
+        shockwaveCooldown = (phase2Active ? Math.max(5, cdSec / 2) : cdSec) * 20;
+        recoveryTicks = Math.max(10, EnjoyNightsConfig.SERVER.bloodMoonBossRecoveryTicks.get() - 4);
         targetCommitmentTicks = 0;
+    }
+
+    private void performChargedLungeStrike(ServerLevel level) {
+        Vec3 forward;
+        if (chargedLungeTarget != null && chargedLungeTarget.isAlive()) {
+            Vec3 diff = chargedLungeTarget.position().subtract(boss.position());
+            forward = new Vec3(diff.x, 0, diff.z).normalize();
+        } else {
+            Vec3 look = boss.getLookAngle();
+            forward = new Vec3(look.x, 0, look.z).normalize();
+        }
+
+        // Horizontal dash towards the target
+        Vec3 lungeMotion = new Vec3(forward.x * 1.15, 0.20, forward.z * 1.15);
+        boss.setDeltaMovement(lungeMotion);
+        boss.hurtMarked = true;
+
+        boss.swing(InteractionHand.MAIN_HAND);
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.HOSTILE, 1.5F, 0.65F);
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 1.5F, 0.5F);
+
+        Vec3 sweepPos = boss.position().add(forward.scale(2.2)).add(0, 1.2, 0);
+        level.sendParticles(ParticleTypes.SWEEP_ATTACK, sweepPos.x, sweepPos.y, sweepPos.z, 3, 0.4, 0.1, 0.4, 0.0);
+        level.sendParticles(ParticleTypes.CRIT, sweepPos.x, sweepPos.y, sweepPos.z, 25, 0.8, 0.3, 0.8, 0.15);
+        level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, sweepPos.x, sweepPos.y, sweepPos.z, 20, 0.8, 0.3, 0.8, 0.1);
+
+        float heavyDmg = (float) boss.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.25F;
+        double reachRadius = 5.0;
+        double cosThreshold = Math.cos(Math.toRadians(140.0 / 2.0)); // 140-degree wide sweep
+
+        AABB box = boss.getBoundingBox().inflate(reachRadius);
+        List<Player> candidates = level.getEntitiesOfClass(Player.class, box, p -> !p.isSpectator() && p.isAlive());
+
+        for (Player p : candidates) {
+            Vec3 toP = p.position().subtract(boss.position());
+            if (toP.length() <= reachRadius) {
+                Vec3 norm = toP.normalize();
+                double dot = forward.x * norm.x + forward.z * norm.z;
+                if (dot >= cosThreshold || p == chargedLungeTarget) {
+                    if (p.isBlocking() && phase2Active) {
+                        ItemStack activeItem = p.getUseItem();
+                        if (!activeItem.isEmpty()) {
+                            p.getCooldowns().addCooldown(activeItem, 60); // 3s shield break in Phase 2
+                        }
+                        p.stopUsingItem();
+                        level.broadcastEntityEvent(p, (byte) 30);
+                        level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.SHIELD_BREAK.value(), SoundSource.PLAYERS, 1.3F, 0.8F);
+                    }
+
+                    p.hurtServer(level, level.damageSources().mobAttack(boss), heavyDmg);
+
+                    Vec3 push = p.position().subtract(boss.position()).normalize().scale(1.1).add(0, 0.25, 0);
+                    p.setDeltaMovement(push);
+                    p.hurtMarked = true;
+
+                    if (phase2Active) {
+                        p.igniteForSeconds(4);
+                    }
+                }
+            }
+        }
+
+        int cdSec = EnjoyNightsConfig.SERVER.bloodMoonBossChargedAttackCooldownSeconds.get();
+        chargedAttackCooldown = (phase2Active ? Math.max(5, cdSec / 2) : cdSec) * 20;
+        recoveryTicks = EnjoyNightsConfig.SERVER.bloodMoonBossRecoveryTicks.get();
+        targetCommitmentTicks = 0;
+        chargedLungeTarget = null;
     }
 
     private void executeRepulsionWave(ServerLevel level, List<Player> nearby) {
@@ -328,6 +463,27 @@ public class BloodMoonBossCombatAI {
         repulsionCooldown = 120; // 6 seconds
     }
 
+    private void executeMeleeAttack(ServerLevel level, Player primaryTarget, double radius) {
+        if (EnjoyNightsConfig.SERVER.bloodMoonBossCleaveEnabled.get() && meleeComboStep == 1) {
+            // Combo Finisher: Sweeping Cleave
+            executeCleaveAttack(level, primaryTarget, radius);
+            meleeComboStep = 0;
+        } else {
+            // Combo Starter: Direct heavy strike
+            boss.swing(InteractionHand.MAIN_HAND);
+            boss.doHurtTarget(level, primaryTarget);
+            if (primaryTarget.hasEffect(MobEffects.WITHER)) {
+                primaryTarget.removeEffect(MobEffects.WITHER);
+                primaryTarget.addEffect(new MobEffectInstance(MobEffects.WITHER, 60, 0, false, true, true));
+            }
+            level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.HOSTILE, 1.2F, 0.7F);
+            if (phase2Active) {
+                primaryTarget.igniteForSeconds(2);
+            }
+            meleeComboStep = 1;
+        }
+    }
+
     private void executeCleaveAttack(ServerLevel level, Player primaryTarget, double radius) {
         boss.swing(InteractionHand.MAIN_HAND);
 
@@ -335,7 +491,6 @@ public class BloodMoonBossCombatAI {
         double angleDeg = EnjoyNightsConfig.SERVER.bloodMoonBossCleaveAngle.get();
         double cosThreshold = Math.cos(Math.toRadians(angleDeg / 2.0));
 
-        // Visual / Audio
         Vec3 sweepPos = boss.position().add(look.scale(1.8)).add(0, 1.2, 0);
         level.sendParticles(ParticleTypes.SWEEP_ATTACK, sweepPos.x, sweepPos.y, sweepPos.z, 2, 0.2, 0.1, 0.2, 0.0);
         level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 1.3F, 0.6F);
@@ -352,6 +507,10 @@ public class BloodMoonBossCombatAI {
                 if (dot >= cosThreshold || p == primaryTarget) {
                     if (p == primaryTarget) {
                         boss.doHurtTarget(level, p);
+                        if (p.hasEffect(MobEffects.WITHER)) {
+                            p.removeEffect(MobEffects.WITHER);
+                            p.addEffect(new MobEffectInstance(MobEffects.WITHER, 60, 0, false, true, true));
+                        }
                     } else {
                         p.hurtServer(level, level.damageSources().mobAttack(boss), baseDmg * 0.70F);
                     }
@@ -368,9 +527,8 @@ public class BloodMoonBossCombatAI {
         level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.4F, 1.1F);
         level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, boss.getX(), boss.getY() + 1.5, boss.getZ(), 50, 1.5, 1.5, 1.5, 0.25);
 
-        // Speed and strength buffs
-        boss.addEffect(new MobEffectInstance(MobEffects.SPEED, -1, 1, false, true, true));
-        boss.addEffect(new MobEffectInstance(MobEffects.STRENGTH, -1, 0, false, true, true));
+        // Speed I (+20%) buff for heightened agility (no Strength to avoid one-shots)
+        boss.addEffect(new MobEffectInstance(MobEffects.SPEED, -1, 0, false, true, true));
 
         // Global message
         String bossNameStr = EnjoyNightsConfig.SERVER.bloodMoonBossName.get();
@@ -385,6 +543,11 @@ public class BloodMoonBossCombatAI {
 
     public void recordDamage(UUID playerUuid, float damage) {
         playerThreat.merge(playerUuid, damage, Float::sum);
+        if (boss.getTarget() instanceof Player current && !current.getUUID().equals(playerUuid)) {
+            if (damage >= 8.0F) {
+                targetCommitmentTicks = Math.min(targetCommitmentTicks, 15);
+            }
+        }
     }
 
     public boolean isPhase2() {

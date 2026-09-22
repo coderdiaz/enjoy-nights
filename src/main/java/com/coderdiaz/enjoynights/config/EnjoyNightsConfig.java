@@ -48,6 +48,10 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.DoubleValue bloodMoonBossKnockbackResistance;
         public final ModConfigSpec.IntValue bloodMoonBossExperience;
         public final ModConfigSpec.BooleanValue bloodMoonBossFreezeTime;
+        public final ModConfigSpec.IntValue bloodMoonBossFreezeDurationSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonBossDespawnAtDawn;
+        public final ModConfigSpec.BooleanValue bloodMoonBossRequireRitual;
+        public final ModConfigSpec.DoubleValue bloodMoonBossScalingRadius;
         public final ModConfigSpec.BooleanValue bloodMoonBossSummonMinions;
         public final ModConfigSpec.IntValue bloodMoonBossRoarCooldownSeconds;
         public final ModConfigSpec.DoubleValue bloodMoonBossScale;
@@ -57,6 +61,9 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue bloodMoonBossLeapAttackEnabled;
         public final ModConfigSpec.IntValue bloodMoonBossLeapCooldownSeconds;
         public final ModConfigSpec.IntValue bloodMoonBossShockwaveCooldownSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonBossChargedAttackEnabled;
+        public final ModConfigSpec.IntValue bloodMoonBossChargedAttackCooldownSeconds;
+        public final ModConfigSpec.IntValue bloodMoonBossRecoveryTicks;
         public final ModConfigSpec.BooleanValue bloodMoonBossPhase2Enabled;
 
         public Server(ModConfigSpec.Builder builder) {
@@ -192,36 +199,52 @@ public class EnjoyNightsConfig {
                     .define("bloodMoonBossName", "Heraldo de la Luna de Sangre");
 
             bloodMoonBossBaseHealth = builder
-                    .comment("Base maximum health of the Blood Moon Boss for a single player (default: 150.0 = 75 hearts)")
-                    .defineInRange("bloodMoonBossBaseHealth", 150.0, 20.0, 2000.0);
+                    .comment("Base maximum health of the Blood Moon Boss for a single player (default: 200.0 = 100 hearts)")
+                    .defineInRange("bloodMoonBossBaseHealth", 200.0, 20.0, 5000.0);
 
             bloodMoonBossHealthPerPlayer = builder
-                    .comment("Additional health added to the boss per extra nearby player (default: 75.0)")
-                    .defineInRange("bloodMoonBossHealthPerPlayer", 75.0, 0.0, 1000.0);
+                    .comment("Additional health added to the boss per extra nearby player in 1000 blocks (default: 100.0 = 50 hearts)")
+                    .defineInRange("bloodMoonBossHealthPerPlayer", 100.0, 0.0, 2000.0);
 
             bloodMoonBossBaseDamage = builder
-                    .comment("Base attack damage of the Blood Moon Boss (default: 10.0)")
-                    .defineInRange("bloodMoonBossBaseDamage", 10.0, 1.0, 100.0);
+                    .comment("Base total attack damage of the Blood Moon Boss (default: 14.0, balanced for Diamond/Netherite armor)")
+                    .defineInRange("bloodMoonBossBaseDamage", 14.0, 1.0, 100.0);
 
             bloodMoonBossDamagePerPlayer = builder
-                    .comment("Additional attack damage per extra nearby player (default: 1.5)")
-                    .defineInRange("bloodMoonBossDamagePerPlayer", 1.5, 0.0, 20.0);
+                    .comment("Additional attack damage per extra nearby player (default: 0.0, boss damage remains fair regardless of player count)")
+                    .defineInRange("bloodMoonBossDamagePerPlayer", 0.0, 0.0, 20.0);
 
             bloodMoonBossSpeed = builder
-                    .comment("Movement speed attribute of the Blood Moon Boss (default: 0.30)")
-                    .defineInRange("bloodMoonBossSpeed", 0.30, 0.10, 1.0);
+                    .comment("Movement speed attribute of the Blood Moon Boss (default: 0.20, heavy colossus pace)")
+                    .defineInRange("bloodMoonBossSpeed", 0.20, 0.10, 1.0);
 
             bloodMoonBossKnockbackResistance = builder
-                    .comment("Knockback resistance of the Blood Moon Boss from 0.0 to 1.0 (default: 0.85)")
-                    .defineInRange("bloodMoonBossKnockbackResistance", 0.85, 0.0, 1.0);
+                    .comment("Knockback resistance of the Blood Moon Boss from 0.0 to 1.0 (default: 0.90, anti-stunlock)")
+                    .defineInRange("bloodMoonBossKnockbackResistance", 0.90, 0.0, 1.0);
 
             bloodMoonBossExperience = builder
                     .comment("Experience points dropped upon defeating the Blood Moon Boss (default: 500)")
                     .defineInRange("bloodMoonBossExperience", 500, 0, 10000);
 
             bloodMoonBossFreezeTime = builder
-                    .comment("Whether time remains locked at midnight (tick 18000) until the Blood Moon Boss is defeated (default: true)")
+                    .comment("Whether time freezes at midnight (tick 18000) during the Blood Moon Boss battle (default: true)")
                     .define("bloodMoonBossFreezeTime", true);
+
+            bloodMoonBossFreezeDurationSeconds = builder
+                    .comment("Maximum duration in seconds that time remains frozen at midnight before resuming natural flow towards dawn (default: 600s = 10 minutes)")
+                    .defineInRange("bloodMoonBossFreezeDurationSeconds", 600, 60, 3600);
+
+            bloodMoonBossDespawnAtDawn = builder
+                    .comment("Whether the boss despawns in a burst of darkness without rewards if players fail to defeat it before dawn (default: true)")
+                    .define("bloodMoonBossDespawnAtDawn", true);
+
+            bloodMoonBossRequireRitual = builder
+                    .comment("Whether the boss must be deliberately summoned via the Crimson Altar ritual rather than spawning automatically at midnight (default: true)")
+                    .define("bloodMoonBossRequireRitual", true);
+
+            bloodMoonBossScalingRadius = builder
+                    .comment("Radius in blocks around the Crimson Altar used to count players for boss health and damage scaling (default: 1000.0 blocks)")
+                    .defineInRange("bloodMoonBossScalingRadius", 1000.0, 50.0, 10000.0);
 
             bloodMoonBossSummonMinions = builder
                     .comment("Whether the boss periodically summons reinforcement minions at 75%, 50%, and 25% health (default: true)")
@@ -240,12 +263,12 @@ public class EnjoyNightsConfig {
                     .define("bloodMoonBossCleaveEnabled", true);
 
             bloodMoonBossCleaveAngle = builder
-                    .comment("Frontal cone angle in degrees for cleaving attacks (default: 120.0)")
-                    .defineInRange("bloodMoonBossCleaveAngle", 120.0, 45.0, 360.0);
+                    .comment("Frontal cone angle in degrees for cleaving attacks (default: 140.0)")
+                    .defineInRange("bloodMoonBossCleaveAngle", 140.0, 45.0, 360.0);
 
             bloodMoonBossCleaveRadius = builder
-                    .comment("Maximum reach radius in blocks for cleaving attacks (default: 4.5)")
-                    .defineInRange("bloodMoonBossCleaveRadius", 4.5, 2.0, 10.0);
+                    .comment("Maximum reach radius in blocks for cleaving attacks (default: 4.0)")
+                    .defineInRange("bloodMoonBossCleaveRadius", 4.0, 2.0, 10.0);
 
             bloodMoonBossLeapAttackEnabled = builder
                     .comment("Whether the boss executes a telegraphed devastating leap slam at distant players/archers (default: true)")
@@ -258,6 +281,18 @@ public class EnjoyNightsConfig {
             bloodMoonBossShockwaveCooldownSeconds = builder
                     .comment("Cooldown in seconds between ground fissure/shockwave attacks that knock players into the air (default: 18s)")
                     .defineInRange("bloodMoonBossShockwaveCooldownSeconds", 18, 5, 60);
+
+            bloodMoonBossChargedAttackEnabled = builder
+                    .comment("Whether the boss performs a telegraphed charged lunge and wide sweeping attack with dynamic target tracking (default: true)")
+                    .define("bloodMoonBossChargedAttackEnabled", true);
+
+            bloodMoonBossChargedAttackCooldownSeconds = builder
+                    .comment("Cooldown in seconds between charged lunge sweep attacks (default: 12s)")
+                    .defineInRange("bloodMoonBossChargedAttackCooldownSeconds", 12, 5, 60);
+
+            bloodMoonBossRecoveryTicks = builder
+                    .comment("Recovery pause duration in ticks (punish window) after executing heavy moves like leap, shockwave or charged lunge (default: 35 ticks = ~1.75s)")
+                    .defineInRange("bloodMoonBossRecoveryTicks", 35, 0, 80);
 
             bloodMoonBossPhase2Enabled = builder
                     .comment("Whether the boss enters Phase 2 'Furia del Eclipse' when below 40% health (default: true)")
