@@ -17,22 +17,40 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 * **Blood Moon Torch & Light Immunity:**
   * Monsters outside protected wards now ignore light levels emitted by torches and lanterns during Blood Moon (`bloodMoonIgnoreTorches = true`). Outdoor areas will crawl with monsters regardless of artificial lighting.
   * The Warding Totem remains the only inviolable sanctuary where monsters cannot spawn.
-* **Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Midnight Time Lock:**
-  * Spawns at exact midnight (tick `18000`) of the Blood Moon (`bloodMoonBossEnabled = true`).
-  * **Frozen Time Mechanic:** While the boss is alive, the world daylight cycle is strictly locked at midnight (`bloodMoonBossFreezeTime = true`). The blood-red moon stays hung in the sky and dawn will never arrive until the boss is vanquished.
+* **Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Crimson Altar Ritual:**
+  * **Crimson Altar Ritual Summoning (`enjoy_nights:crimson_altar`):** Players now summon the boss deliberately by crafting and placing the Crimson Altar during a Blood Moon night on the surface (`bloodMoonBossRequireRitual = true`).
+  * **Surface Requirement (No Caves):** Placing or activating the altar underground or without open sky is strictly rejected, returning the altar to the player with a warning message.
+  * **1000-Block Dynamic Player Scaling:** Power scales dynamically based on the count of active players within a **1000-block radius** (`bloodMoonBossScalingRadius = 1000.0`), broadcasting the adjusted difficulty in chat.
+  * **10-Minute Freeze & Dawn Despawn:**
+    * When summoned, time freezes at midnight for a maximum of **10 minutes** (`bloodMoonBossFreezeDurationSeconds = 600`).
+    * Once the 10 minutes conclude, time resumes natural flow toward morning.
+    * If players fail to defeat the boss before dawn arrives, the boss triggers a pulse of darkness and blindness, dissolving into the morning shadows without dropping loot (`bloodMoonBossDespawnAtDawn = true`).
   * **On-Screen Boss Bar:** Vivid red boss bar (`ServerBossEvent`) visible at the top of the screen tracking health percentage and player engagement within 128 blocks.
-  * **Dynamic Player Scaling:** Scales health and attack damage based on the number of active players nearby ($150\text{ HP} + 75\text{ HP}$ per extra player; $10\text{ damage} + 1.5$ per extra player).
   * **Imposing Scale & Colossus Stride:** Towering at 1.7x scale (`Attributes.SCALE`) with 1.25 step height (`Attributes.STEP_HEIGHT`).
   * **Smart Aggro & Target Commitment:** Commits to targets in 5-second windows to eliminate pathfinder stutter while tracking damage threat to aggressively pursue snipers and archers.
+  * **Pacing, Speed & Combat Balance Calibration:**
+    * Base movement speed calibrated to 0.20 (deliberate, menacing colossus stride instead of hyperactive rushing).
+    * **Damage & Survivability Overhaul (No One-Shots):** Removed player count damage scaling (`damagePerPlayer = 0.0`) and calibrated total attack damage to 14.0. Players in Diamond/Netherite armor can survive 4 to 5 hits.
+    * **Shortened Wither:** Reduced Wither effect duration from 10s to 3s (60 ticks) per strike.
+    * **Health & Poise Scaling for Groups:** Base health set to 200 HP (+100 HP per extra player in 1000 blocks). Knockback resistance set to 0.90 to prevent group stunlocking.
+    * **Minion Scaling:** Reinforced minion squads now scale dynamically with group size (2 to 6 minions) at 75%, 50%, and 25% health.
+    * Alternating melee combo: standard single-target strike followed by sweeping cleave finisher, eliminating repetitive cleave spam.
+    * Added **Extended Punish Windows (Recovery Frames):** After executing heavy abilities (Leap, Shockwave, or Charged Lunge), the boss pauses in recovery for ~1.75s (`bloodMoonBossRecoveryTicks = 35`), giving players tactical opportunities to counterattack safely.
   * **Elden Ring Moveset & Combat Abilities:**
-    * **Conical Cleave:** 120° frontal sweep damaging multiple players within melee range.
+    * **Telegraphed Charged Lunge & Sweeping Dash:** Winds up with 1.5s visual/sound telegraph, dynamic target tracking during charge, and dashes forward in a 140° wide sweep inflicting balanced damage, shield breaks (in Phase 2), and knockback (`bloodMoonBossChargedAttackEnabled = true`).
+    * **Conical Cleave:** 140° frontal sweep damaging multiple players within melee range.
     * **Devastating Leap Slam:** Launches toward distant archers, dealing AoE explosion damage and disabling shields for 5 seconds.
     * **Ground Fissure:** Slams the ground launching nearby players into the air.
     * **Repulsion Wave:** Discharges a concussive shockwave when crowded by 3 or more players.
-    * **Phase 2 "Furia del Eclipse":** Activates below 40% health with soul-fire aura, speed buffs, fire-infused attacks, and halved ability cooldowns.
+    * **Phase 2 "Furia del Eclipse":** Activates below 40% health with soul-fire aura, speed buffs, fire-infused attacks, and halved ability cooldowns (without damage multipliers).
     * **Midnight Roar & Minion Waves:** Emits Warden roars causing Darkness and Slowness, and summons minion reinforcements at 75%, 50%, and 25% health.
   * **Triumphant Victory & Rewards:** Defeating the boss broadcasts a global victory announcement, unfreezes the passage of time toward dawn, and awards 500 XP, Diamonds, Emeralds, Amethyst Shards, and a Totem of Undying.
-  * **100% Server Configurable:** Scale, cleave angle/radius, leap attack, shockwave, phase 2, health, damage, and time lock are fully customizable in `enjoy_nights-server.toml`.
+  * **100% Server Configurable:** Scale, speed, charged attack, recovery ticks, cleave angle/radius, leap attack, shockwave, phase 2, health, damage, freeze duration, scaling radius, and dawn despawn are fully customizable in `enjoy_nights-server.toml`.
+* **Server Performance & Night Mob Cleanup Fix:**
+  * **Eliminated Server Entity Saturation:** Fixed lingering mobs from full and blood moons by replacing `EntitySpawnReason.EVENT` with `NATURAL` and `REINFORCEMENT` spawn types.
+  * **Daytime Despawn Routine (`MobDespawnEvent`):** Mobs with night tags (`enjoy_nights:extra_spawn`, `enjoy_nights:fire_skeleton`) are forcibly despawned at dawn even when wearing helmets.
+  * **Chunk Load Purge (`EntityJoinLevelEvent`):** Mobs from previous versions loading from disk during the daytime are automatically discarded.
+  * **Admin Purge Command:** Added `/enjoynights purge` (permission level 2) to sweep and remove all lingering night mobs across all loaded dimensions.
 * **Blood Moon Flame Skeletons:**
   * Skeletons spawning during Blood Moon have a 15% chance (`bloodMoonFlameSkeletonChance = 0.15`) to spawn as fiery archers equipped with helmets and Flame-enchanted bows, firing incendiary arrows that ignite targets and combustible blocks. Their flame bows and helmets are guaranteed never to drop on death to prevent loot farming.
 

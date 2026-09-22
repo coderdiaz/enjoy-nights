@@ -68,23 +68,29 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * **Safe Deactivation & Refund:** Deactivating the totem frees the player's binding and safely returns the 8 amethyst shards to your inventory.
 * **Permanent Destruction (No Silk Touch Recovery):** Mining or breaking the totem block in the world permanently destroys it without dropping the totem item (even when mined with a Silk Touch pickaxe). Any stored amethysts are refunded on break.
 
-### 10. Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Midnight Time Lock
-* **Midnight Arrival:** Exactly at midnight (tick `18000`) of the Blood Moon, the terrifying champion **El Heraldo Carmesí** descends upon the world (`bloodMoonBossEnabled = true`).
-* **Frozen Time Mechanic:** As long as the boss is alive, world daylight progression is **strictly locked at midnight** (`bloodMoonBossFreezeTime = true`). The blood-red moon stays hung in the sky and dawn will never arrive until the boss is slain.
-* **Dynamic Player Scaling:** Maximum health and attack damage scale dynamically based on the number of active players nearby ($150\text{ HP} + 75\text{ HP}$ per extra player; $10\text{ damage} + 1.5$ per extra player).
+### 10. Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Crimson Altar Ritual
+* **Crimson Altar Ritual Summoning (`crimson_altar`):** Rather than forced random spawns, the boss is summoned by crafting and placing the **Crimson Altar** during a Blood Moon night on the surface under open sky (`bloodMoonBossRequireRitual = true`).
+* **Strict Surface Requirement (No Caves):** The ritual strictly rejects attempts underground or without direct sky access (`canSeeSky`), protecting players from cramped subterranean glitches and returning the altar to their inventory.
+* **1000-Block Dynamic Player Scaling:** Before spawning, the altar scans for all active players within a **1000-block radius** (`bloodMoonBossScalingRadius = 1000.0`), dynamically scaling boss health ($200\text{ HP} + 100\text{ HP}$ per extra player) while keeping base damage consistent at 14.0 for fair survival.
+* **10-Minute Freeze & Dawn Despawn:**
+  * When summoned, time freezes at midnight for **up to 10 minutes** (`bloodMoonBossFreezeDurationSeconds = 600`).
+  * Once the 10 minutes expire, time resumes natural progression towards dawn, giving players until sunrise to finish the battle.
+  * **Dawn Despawn in Darkness:** If players fail to defeat the boss before dawn arrives, the boss releases an ominous wave of darkness and blindness, fading into the morning shadows without dropping victory rewards (`bloodMoonBossDespawnAtDawn = true`).
 * **On-Screen Boss Bar:** Displays a vivid red boss bar (`ServerBossEvent`) at the top of the screen tracking health and engagement within 128 blocks.
 * **Imposing Scale & Colossus Stride:** Towering at **1.7x scale** (`Attributes.SCALE`) with a 1.25 step height (`Attributes.STEP_HEIGHT`), navigating single-block elevations effortlessly.
 * **Smart Multi-Target Aggro:** Commits to targets in 5-second windows to avoid stuttering pathfinding bugs, while tracking player threat to aggressively retarget snipers and archers.
 * **Elden Ring-Style Moveset & Telegraphed Attacks:**
-  * **Conical Cleave Attack:** Sweeping netherite axe swings deal damage in a 120° frontal cone to all players in melee reach.
+  * **Conical Cleave Attack:** Sweeping netherite axe swings deal damage in a 140° frontal cone to all players in melee reach.
+  * **Telegraphed Charged Lunge & Sweeping Dash:** Winds up with raised blade and dynamic target tracking, then charges forward delivering a 140° wide sweep with massive damage and knockback.
   * **Devastating Leap Slam (Anti-Kiting):** When targets stay between 8 and 24 blocks away, the boss launches into the air and slams down, inflicting AoE damage and **disabling shields for 5 seconds**.
   * **Ground Fissure:** Slams the ground launching all nearby players into the air with vertical knockup.
   * **Repulsion Wave (Anti-Gank):** If 3 or more players crowd the boss within 3.5 blocks, emits a concussive shockwave blasting everyone back.
+  * **Punish Windows (Recovery Frames):** After unleashing heavy moves (Leap, Shockwave, or Charged Lunge), the boss pauses for ~1.75s (`bloodMoonBossRecoveryTicks = 35`), giving observant players a window to punish and counterattack.
   * **Phase 2 - Furia del Eclipse (< 40% HP):** Emits soul-fire trails, gains Speed & Strength, attacks ignite targets, and ability cooldowns are halved.
   * **Midnight Roar:** Emits an echoing roar inflicting Darkness and Slowness on nearby players (`bloodMoonBossRoarCooldownSeconds = 30`).
   * **Reinforcement Waves:** Summons fiery skeletons and armored zombies at 75%, 50%, and 25% health.
 * **Glorious Victory:** Vanquishing the boss broadcasts a global victory message, unfreezes the passage of time toward dawn, and awards 500 XP, Diamonds, Emeralds, Amethyst Shards, and a Totem of Undying.
-* **100% Server Configurable:** All boss stats, scaling, moveset cooldowns, and mechanics can be fine-tuned in `enjoy_nights-server.toml`.
+* **100% Server Configurable:** All boss stats, scaling radius, ritual requirements, freeze durations, moveset cooldowns, and mechanics can be fine-tuned in `enjoy_nights-server.toml`.
 
 ### 11. Blood Moon Torch Immunity & Flame Skeletons
 * **Torch & Light Immunity:** Outside of protected Warding Totem areas, monsters during a Blood Moon ignore block light emitted by torches, lanterns, and glowstone (`bloodMoonIgnoreTorches = true`). The Warding Totem is the only safe haven where monsters cannot spawn.
@@ -168,23 +174,31 @@ All mechanics are 100% customizable:
         bloodMoonBossEnabled = true
         # Name displayed on the Boss Bar
         bloodMoonBossName = "Heraldo de la Luna de Sangre"
-        # Base maximum health for 1 player (default: 150.0 = 75 hearts)
-        bloodMoonBossBaseHealth = 150.0
-        # Extra health added per nearby player (default: 75.0)
-        bloodMoonBossHealthPerPlayer = 75.0
-        # Base attack damage (default: 10.0)
-        bloodMoonBossBaseDamage = 10.0
-        # Extra attack damage per nearby player (default: 1.5)
-        bloodMoonBossDamagePerPlayer = 1.5
-        # Movement speed attribute (default: 0.30)
-        bloodMoonBossSpeed = 0.30
-        # Knockback resistance (default: 0.85)
-        bloodMoonBossKnockbackResistance = 0.85
+        # Base maximum health for 1 player (default: 200.0 = 100 hearts)
+        bloodMoonBossBaseHealth = 200.0
+        # Extra health added per nearby player in 1000 blocks (default: 100.0 = 50 hearts)
+        bloodMoonBossHealthPerPlayer = 100.0
+        # Base total attack damage (default: 14.0, balanced for Diamond/Netherite)
+        bloodMoonBossBaseDamage = 14.0
+        # Extra attack damage per nearby player (default: 0.0, damage does not scale per player)
+        bloodMoonBossDamagePerPlayer = 0.0
+        # Movement speed attribute (default: 0.20, colossus pace)
+        bloodMoonBossSpeed = 0.20
+        # Knockback resistance (default: 0.90, anti-stunlock)
+        bloodMoonBossKnockbackResistance = 0.90
         # Experience points dropped upon defeat (default: 500)
         bloodMoonBossExperience = 500
-        # Freeze time at midnight until boss is defeated
+        # Freeze time at midnight during the boss battle (default: true)
         bloodMoonBossFreezeTime = true
-        # Summon reinforcement minion waves at 75%, 50%, and 25% health
+        # Maximum duration in seconds that time remains frozen before resuming flow (default: 600s = 10m)
+        bloodMoonBossFreezeDurationSeconds = 600
+        # Whether the boss despawns in darkness without rewards if not slain before dawn
+        bloodMoonBossDespawnAtDawn = true
+        # Require deliberate Crimson Altar ritual summoning instead of auto-spawn at midnight
+        bloodMoonBossRequireRitual = true
+        # Radius in blocks around altar used to count players for boss difficulty scaling
+        bloodMoonBossScalingRadius = 1000.0
+        # Summon reinforcement minion waves at 75%, 50%, and 25% health (scales with group size)
         bloodMoonBossSummonMinions = true
         # Cooldown in seconds between roar attacks causing darkness/slowness
         bloodMoonBossRoarCooldownSeconds = 30
@@ -192,16 +206,22 @@ All mechanics are 100% customizable:
         bloodMoonBossScale = 1.7
         # Enable frontal conical cleave attacks hitting multiple players
         bloodMoonBossCleaveEnabled = true
-        # Angle in degrees for the frontal cleave cone (default: 120.0)
-        bloodMoonBossCleaveAngle = 120.0
-        # Reach in blocks for cleaving attacks (default: 4.5)
-        bloodMoonBossCleaveRadius = 4.5
+        # Angle in degrees for the frontal cleave cone (default: 140.0)
+        bloodMoonBossCleaveAngle = 140.0
+        # Reach in blocks for cleaving attacks (default: 4.0)
+        bloodMoonBossCleaveRadius = 4.0
         # Enable devastating leap slam attack at distant archers/players
         bloodMoonBossLeapAttackEnabled = true
         # Cooldown in seconds between leap slam attacks (default: 14s)
         bloodMoonBossLeapCooldownSeconds = 14
         # Cooldown in seconds between ground shockwave attacks (default: 18s)
         bloodMoonBossShockwaveCooldownSeconds = 18
+        # Enable telegraphed charged lunge & sweeping dash attack
+        bloodMoonBossChargedAttackEnabled = true
+        # Cooldown in seconds between charged lunge attacks (default: 12s)
+        bloodMoonBossChargedAttackCooldownSeconds = 12
+        # Recovery pause duration in ticks (punish window) after heavy moves (default: 35 ticks = ~1.75s)
+        bloodMoonBossRecoveryTicks = 35
         # Enable Phase 2 "Furia del Eclipse" below 40% health
         bloodMoonBossPhase2Enabled = true
 ```
