@@ -60,6 +60,13 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
   * Small periodic waves of 1-2 siege zombies spawn every 30 seconds around active players.
   * **Strict Safety Cap (`bloodMoonMaxNearbyMobs = 16`):** If there are already 16 or more monsters within 32 blocks of a player, extra spawns are paused to prevent server lag or overwhelming swarms.
 
+### 8. Anticipatory Event Warnings
+* **See it coming:** Players no longer learn about lunar events only when they start. Chat warnings give you time to prepare.
+* **Blood Moon advance notice:** A chat warning is broadcast **3 days before** a Blood Moon siege by default (`bloodMoonWarningDaysBefore = 3`, `bloodMoonWarningEnabled = true`), fired once that day. Automatically skipped if the configured lead is greater than or equal to `bloodMoonIntervalDays`.
+* **Blood Moon sunset warning:** On the Blood Moon day, a chat warning appears during the sunset window before night falls (`bloodMoonPreDuskWarningTicks = 300` = 15s, `bloodMoonPreDuskWarningEnabled = true`). The cinematic title still plays when night actually begins — this is an additional heads-up, not a replacement.
+* **Full Moon sunset warning:** On a Full Moon day, a lighter chat warning appears during the sunset window before night falls (`fullMoonPreDuskWarningTicks = 200` = 10s, `fullMoonWarningEnabled = true`), hinting that monsters will be stronger that night. Works even if the Blood Moon siege mechanic is disabled.
+* **Chat-only & non-intrusive:** All anticipatory warnings are plain chat messages — no sounds, no cinematic. Each fires at most once per relevant day and is independently toggleable.
+
 ### 9. Warding Totem (Base Sanctuary & Perimeter Repulsion)
 * **Craftable Base Protection:** Placeable mystic totem (`enjoy_nights:warding_totem`) that creates a protective boundary in a **100-block radius** (`wardingTotemRadius = 100`).
 * **Perimeter Repulsion Forcefield:** Instead of deleting mob spawns, monsters attempting to spawn within the 100-block protection radius are pushed outward and relocated to the perimeter exterior (102–106 blocks away on safe surface ground), preserving world mob density and concentrating sieges outside your base walls.
@@ -135,6 +142,10 @@ All mechanics are 100% customizable:
         fullMoonChargedCreeperChance = 0.05
         # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Blood Moon (default: 0.25 = 25%)
         bloodMoonChargedCreeperChance = 0.25
+        # Send a chat warning in the sunset window on a Full Moon day, before night falls
+        fullMoonWarningEnabled = true
+        # Ticks before dusk (tick 12500) to send the Full Moon pre-nightfall chat warning (200 = 10s)
+        fullMoonPreDuskWarningTicks = 200
 
     [server.paranoia]
         # Seconds standing still in a dark enclosed space before paranoia triggers (180s = 3 min)
@@ -168,6 +179,14 @@ All mechanics are 100% customizable:
         bloodMoonIgnoreTorches = true
         # Chance for skeletons to spawn as fire-shooting Flame Skeletons (15%)
         bloodMoonFlameSkeletonChance = 0.15
+        # Broadcast a chat warning N days before a Blood Moon siege
+        bloodMoonWarningEnabled = true
+        # Number of days before a Blood Moon to warn (ignored if >= bloodMoonIntervalDays)
+        bloodMoonWarningDaysBefore = 3
+        # Send a chat warning in the sunset window on the Blood Moon day (cinematic still plays at night)
+        bloodMoonPreDuskWarningEnabled = true
+        # Ticks before dusk (tick 12500) to send the Blood Moon pre-nightfall chat warning (300 = 15s)
+        bloodMoonPreDuskWarningTicks = 300
 
     [server.blood_moon_boss]
         # Enables the midnight Blood Moon Boss
@@ -252,7 +271,7 @@ All mechanics are 100% customizable:
 
 ## 💬 In-Game Commands
 
-* `/enjoynights info`: Shows current day, lunar phase, night status, and days remaining until the next Blood Moon.
+* `/enjoynights info`: Shows current day, lunar phase, night status, days remaining until the next Blood Moon, and the predicted event for the coming night (Blood Moon, Full Moon, New Moon, or normal night).
 * `/enjoynights bloodmoon start`: *(Operator / Permission level 2)* Forces a Blood Moon siege to start for testing or server events.
 * `/enjoynights bloodmoon stop`: *(Operator / Permission level 2)* Stops the forced Blood Moon.
 

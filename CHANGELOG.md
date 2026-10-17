@@ -7,6 +7,12 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 ## [1.2.0] - 2026-09-20
 
 ### 🚀 New Features & Enhancements
+* **Anticipatory Event Warnings (Chat):** Players can now foresee incoming lunar events instead of only learning about them at the moment they begin.
+  * **Blood Moon Advance Warning:** A chat warning is broadcast a configurable number of days before a Blood Moon siege (`bloodMoonWarningDaysBefore = 3`), fired once on that day so players have time to fortify.
+  * **Blood Moon Pre-Nightfall Warning:** On the Blood Moon day itself, a chat warning appears in the sunset window a configurable number of ticks before night falls (`bloodMoonPreDuskWarningTicks = 300` = 15s). The existing cinematic title still plays when night actually begins — this warning does not replace it.
+  * **Full Moon Pre-Nightfall Warning:** On a Full Moon day, a lighter chat warning appears in the sunset window before night falls (`fullMoonPreDuskWarningTicks = 200` = 10s), hinting that monsters will be stronger that night.
+  * All anticipatory warnings are **chat-only** (no sounds, no cinematic) and each is independently toggleable (`bloodMoonWarningEnabled`, `bloodMoonPreDuskWarningEnabled`, `fullMoonWarningEnabled`). Full Moon warnings function even when the Blood Moon siege mechanic is disabled.
+  * **`/enjoynights info`** now reports the predicted event for the coming night (Blood Moon, Full Moon, New Moon, or normal night), readable during the day. Backed by new null-safe lunar-prediction helpers that latch per day and use a tick window so a laggy or skipped tick cannot miss the sunset moment.
 * **Warding Totem & Base Sanctuary System:**
   * Added craftable **Warding Totem** (`enjoy_nights:warding_totem`) to safeguard player bases and structures.
   * **Perimeter Repulsion Forcefield:** Instead of cancelling mob spawns, monsters attempting to spawn within the 100-block protection radius (`wardingTotemRadius = 100`) are repelled and relocated to the perimeter exterior (102–106 blocks away on surface ground), concentrating the siege outside the base without reducing world mob density.

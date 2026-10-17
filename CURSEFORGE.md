@@ -82,6 +82,8 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         fullMoonExperienceMultiplier = 3
         fullMoonChargedCreeperChance = 0.05
         bloodMoonChargedCreeperChance = 0.25
+        fullMoonWarningEnabled = true
+        fullMoonPreDuskWarningTicks = 200
 
     [server.paranoia]
         paranoiaDurationSeconds = 180
@@ -97,6 +99,10 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         bloodMoonWaveIntervalSeconds = 30
         bloodMoonMaxNearbyMobs = 16
         bloodMoonDarknessPulseEnabled = true
+        bloodMoonWarningEnabled = true
+        bloodMoonWarningDaysBefore = 3
+        bloodMoonPreDuskWarningEnabled = true
+        bloodMoonPreDuskWarningTicks = 300
 
 [client]
     bloodMoonFogTint = true
