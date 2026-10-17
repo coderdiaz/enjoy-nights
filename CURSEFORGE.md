@@ -84,6 +84,8 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         bloodMoonChargedCreeperChance = 0.25
         fullMoonWarningEnabled = true
         fullMoonPreDuskWarningTicks = 200
+        eventMobCleanupEnabled = true
+        fullMoonWitchChance = 0.03
 
     [server.paranoia]
         paranoiaDurationSeconds = 180
@@ -103,6 +105,23 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         bloodMoonWarningDaysBefore = 3
         bloodMoonPreDuskWarningEnabled = true
         bloodMoonPreDuskWarningTicks = 300
+        bloodMoonSiegeWaveMinMobs = 3
+        bloodMoonSiegeWaveMaxMobs = 5
+        bloodMoonSiegeEscalationEnabled = true
+        bloodMoonSiegeMaxCapNight = 24
+        bloodMoonSiegeEscalationWavesBeforeElite = 3
+        bloodMoonWaveZombieWeight = 30
+        bloodMoonWaveCaveSpiderWeight = 15
+        bloodMoonWaveSkeletonWeight = 15
+        bloodMoonWaveHuskWeight = 8
+        bloodMoonWaveStrayWeight = 8
+        bloodMoonWaveWitchWeight = 4
+        bloodMoonWaveVindicatorWeight = 3
+        bloodMoonWaveBreezeWeight = 2
+        bloodMoonWitherSkeletonEliteChance = 0.01
+        bloodMoonCaveSpiderChance = 0.20
+        bloodMoonCaveSpiderPoisonSeconds = 5
+        bloodMoonCaveSpiderPoisonAmplifier = 0
 
 [client]
     bloodMoonFogTint = true

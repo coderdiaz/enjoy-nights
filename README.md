@@ -40,6 +40,7 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
   * 50% chance for monsters to spawn with **Strength** and **Speed** potion effects.
   * **Anti-Exploit Creeper Mechanics:** Creepers never receive potion effects (preventing permanent lingering potion clouds upon explosion); instead, they have a **5% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.05`) and receive a direct +15% movement speed attribute buff.
   * Defeating powered monsters rewards **3x Experience** (`fullMoonExperienceMultiplier = 3`).
+  * **Rare Eerie Witch (3% chance):** A natural monster spawn may be accompanied by a lone **Witch** (`fullMoonWitchChance = 0.03`) as an unsettling standalone threat — Full Moon has no sieges, so this is an atmospheric encounter, never a swarm (at most one lone witch nearby at a time).
 
 ### 6. Enclosed Dark Area Paranoia
 * If a player stays **still for more than 3 minutes (180s)** in an enclosed area (under a ceiling / no sky exposure) with **block light at 0** during the night:
@@ -56,9 +57,10 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
   * Inherits all mineral drops and 3x XP from the Full Moon, with a 75% chance for monsters to gain **Strength II**, **Resistance**, and **Speed**.
   * **Charged Creepers (25% chance):** Creepers have a 25% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.25`) without dropping lingering potion clouds.
 * **Balanced Siege Mob Spawning (Anti-Lag):**
-  * Natural monster spawns have a 35% chance to spawn an additional companion mob.
-  * Small periodic waves of 1-2 siege zombies spawn every 30 seconds around active players.
-  * **Strict Safety Cap (`bloodMoonMaxNearbyMobs = 16`):** If there are already 16 or more monsters within 32 blocks of a player, extra spawns are paused to prevent server lag or overwhelming swarms.
+  * Natural monster spawns have a 35% chance to spawn an additional companion mob. During Blood Moon, this companion has a configurable chance (`bloodMoonCaveSpiderChance = 0.20`) to be a **poisonous Cave Spider** ambusher that inflicts **Poison** on hit (`bloodMoonCaveSpiderPoisonSeconds = 5`, `bloodMoonCaveSpiderPoisonAmplifier = 0`).
+  * **Escalating mixed-composition waves:** Siege waves now spawn **3–5 mobs** per player (`bloodMoonSiegeWaveMinMobs = 3`, `bloodMoonSiegeWaveMaxMobs = 5`) every 30 seconds, growing larger as the night deepens (`bloodMoonSiegeEscalationEnabled = true`). Composition is weight-driven: a **core** of Zombies, Cave Spiders, and Skeletons, with **rare escalation units** — Husks, Strays, Witches, Vindicators, and Breezes — unlocking only in late waves (past midnight and after `bloodMoonSiegeEscalationWavesBeforeElite = 3` waves).
+  * **Elite Wither Skeleton (~1%):** Late-wave skeleton slots have a small chance (`bloodMoonWitherSkeletonEliteChance = 0.01`) to become an elite Wither Skeleton that inflicts **Wither** on hit and gains **Resistance** (this is *not* the Crimson boss).
+  * **Escalating Safety Cap:** The nearby-mob cap rises from the baseline (`bloodMoonMaxNearbyMobs = 16`) toward a nighttime ceiling (`bloodMoonSiegeMaxCapNight = 24`) as midnight approaches, then holds — keeping sieges intense but performance bounded.
 
 ### 8. Anticipatory Event Warnings
 * **See it coming:** Players no longer learn about lunar events only when they start. Chat warnings give you time to prepare.
@@ -146,6 +148,10 @@ All mechanics are 100% customizable:
         fullMoonWarningEnabled = true
         # Ticks before dusk (tick 12500) to send the Full Moon pre-nightfall chat warning (200 = 10s)
         fullMoonPreDuskWarningTicks = 200
+        # Remove event-spawned mobs and revert empowered natural mobs when a lunar event ends; also cleans lingering/legacy event mobs on chunk reload
+        eventMobCleanupEnabled = true
+        # Chance (0.0 to 1.0) for a natural Full Moon spawn to be accompanied by a rare, eerie lone Witch (default: 0.03 = 3%)
+        fullMoonWitchChance = 0.03
 
     [server.paranoia]
         # Seconds standing still in a dark enclosed space before paranoia triggers (180s = 3 min)
@@ -187,6 +193,30 @@ All mechanics are 100% customizable:
         bloodMoonPreDuskWarningEnabled = true
         # Ticks before dusk (tick 12500) to send the Blood Moon pre-nightfall chat warning (300 = 15s)
         bloodMoonPreDuskWarningTicks = 300
+        # Siege wave size per player before escalation
+        bloodMoonSiegeWaveMinMobs = 3
+        bloodMoonSiegeWaveMaxMobs = 5
+        # Grow waves larger and unlock rare units as the night deepens
+        bloodMoonSiegeEscalationEnabled = true
+        # Escalation anti-lag ceiling (should be >= bloodMoonMaxNearbyMobs)
+        bloodMoonSiegeMaxCapNight = 24
+        # Waves that must pass (and be past midnight) before rare units appear
+        bloodMoonSiegeEscalationWavesBeforeElite = 3
+        # Siege composition weights (core units always; rare units only in late waves)
+        bloodMoonWaveZombieWeight = 30
+        bloodMoonWaveCaveSpiderWeight = 15
+        bloodMoonWaveSkeletonWeight = 15
+        bloodMoonWaveHuskWeight = 8
+        bloodMoonWaveStrayWeight = 8
+        bloodMoonWaveWitchWeight = 4
+        bloodMoonWaveVindicatorWeight = 3
+        bloodMoonWaveBreezeWeight = 2
+        # Chance for a late-wave skeleton slot to become an elite Wither Skeleton (Wither on hit)
+        bloodMoonWitherSkeletonEliteChance = 0.01
+        # Poisonous Cave Spider ambusher companion chance + poison on hit
+        bloodMoonCaveSpiderChance = 0.20
+        bloodMoonCaveSpiderPoisonSeconds = 5
+        bloodMoonCaveSpiderPoisonAmplifier = 0
 
     [server.blood_moon_boss]
         # Enables the midnight Blood Moon Boss
@@ -274,6 +304,7 @@ All mechanics are 100% customizable:
 * `/enjoynights info`: Shows current day, lunar phase, night status, days remaining until the next Blood Moon, and the predicted event for the coming night (Blood Moon, Full Moon, New Moon, or normal night).
 * `/enjoynights bloodmoon start`: *(Operator / Permission level 2)* Forces a Blood Moon siege to start for testing or server events.
 * `/enjoynights bloodmoon stop`: *(Operator / Permission level 2)* Stops the forced Blood Moon.
+* `/enjoynights purge`: *(Operator / Permission level 2)* Immediately force-deletes all event-spawned and empowered mobs across every loaded dimension. Useful for emergency cleanup; the mod already cleans up automatically when events end (`eventMobCleanupEnabled`).
 
 ---
 
