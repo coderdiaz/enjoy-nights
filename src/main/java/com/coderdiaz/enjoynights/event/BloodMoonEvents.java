@@ -41,6 +41,14 @@ public class BloodMoonEvents {
     private static int siegeWaveTickCounter = 0;
     private static final Map<UUID, Integer> DARKNESS_PULSE_COOLDOWNS = new ConcurrentHashMap<>();
 
+    // Anticipatory warning latches. Tracked per absolute day number so each warning
+    // fires at most once per relevant day, surviving the ~20 ticks/sec event cadence.
+    private static final long NO_DAY = -1L;
+    private static long lastProcessedDay = NO_DAY;
+    private static long bloodMoonDaysWarnedDay = NO_DAY;
+    private static long bloodMoonPreDuskWarnedDay = NO_DAY;
+    private static long fullMoonPreDuskWarnedDay = NO_DAY;
+
     @SubscribeEvent
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) {
@@ -98,6 +106,10 @@ public class BloodMoonEvents {
         if (level.dimension() != Level.OVERWORLD) {
             return;
         }
+
+        // Anticipatory warnings run independently of the siege toggle so Full Moon
+        // warnings still work even when the Blood Moon siege mechanic is disabled.
+        processAnticipatoryWarnings(level);
 
         if (!EnjoyNightsConfig.SERVER.bloodMoonSiegeEnabled.get()) {
             return;
@@ -281,6 +293,81 @@ public class BloodMoonEvents {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Evaluates and dispatches the chat-only anticipatory warnings each tick:
+     *   - Blood Moon advance warning, once, exactly N days before a Blood Moon.
+     *   - Blood Moon pre-dusk warning, once, in the sunset window of the Blood Moon day.
+     *   - Full Moon pre-dusk warning, once, in the sunset window of a Full Moon day.
+     *
+     * All warnings latch on the absolute day number so they fire at most once per
+     * relevant day despite running ~20 times per second. The pre-dusk checks use a
+     * tick window (not an exact-tick equality) so a laggy or skipped tick cannot miss
+     * the sunset moment. These are chat messages only: no sounds and no cinematic
+     * (the Blood Moon cinematic still fires separately when night actually falls).
+     */
+    private static void processAnticipatoryWarnings(ServerLevel level) {
+        long day = NightAndMoonHelper.getDay(level);
+
+        // Reset per-day latches whenever the day number changes (new dawn or time command).
+        if (day != lastProcessedDay) {
+            lastProcessedDay = day;
+            bloodMoonPreDuskWarnedDay = NO_DAY;
+            fullMoonPreDuskWarnedDay = NO_DAY;
+        }
+
+        boolean siegeEnabled = EnjoyNightsConfig.SERVER.bloodMoonSiegeEnabled.get();
+
+        // 1) Blood Moon advance warning: exactly `daysBefore` days before the next Blood Moon.
+        if (siegeEnabled && EnjoyNightsConfig.SERVER.bloodMoonWarningEnabled.get()) {
+            int interval = EnjoyNightsConfig.SERVER.bloodMoonIntervalDays.get();
+            int daysBefore = EnjoyNightsConfig.SERVER.bloodMoonWarningDaysBefore.get();
+            // Skip when the lead would overlap the Blood Moon day itself or a too-short interval.
+            if (interval > daysBefore) {
+                long daysUntil = NightAndMoonHelper.getDaysUntilNextBloodMoon(level);
+                if (daysUntil == daysBefore && bloodMoonDaysWarnedDay != day) {
+                    bloodMoonDaysWarnedDay = day;
+                    broadcastChat(level, Component.translatable("enjoy_nights.bloodmoon.incoming_days", daysUntil)
+                            .withStyle(ChatFormatting.RED));
+                }
+            }
+        }
+
+        // Pre-dusk (sunset) warnings only make sense while it is still daytime.
+        if (NightAndMoonHelper.isNight(level)) {
+            return;
+        }
+
+        // 2) Blood Moon pre-dusk warning on the Blood Moon day. Takes precedence over Full Moon.
+        boolean tonightIsBloodMoon = siegeEnabled && NightAndMoonHelper.isBloodMoonDayNumber(level, day);
+        if (tonightIsBloodMoon
+                && EnjoyNightsConfig.SERVER.bloodMoonPreDuskWarningEnabled.get()
+                && NightAndMoonHelper.isInPreDuskWindow(level, EnjoyNightsConfig.SERVER.bloodMoonPreDuskWarningTicks.get())
+                && bloodMoonPreDuskWarnedDay != day) {
+            bloodMoonPreDuskWarnedDay = day;
+            broadcastChat(level, Component.translatable("enjoy_nights.bloodmoon.pre_dusk")
+                    .withStyle(ChatFormatting.DARK_RED));
+            return;
+        }
+
+        // 3) Full Moon pre-dusk warning on a Full Moon day (suppressed if tonight is a Blood Moon).
+        boolean tonightIsFullMoon = NightAndMoonHelper.getMoonPhaseForDay(day) == NightAndMoonHelper.MOON_PHASE_FULL;
+        if (!tonightIsBloodMoon
+                && tonightIsFullMoon
+                && EnjoyNightsConfig.SERVER.fullMoonWarningEnabled.get()
+                && NightAndMoonHelper.isInPreDuskWindow(level, EnjoyNightsConfig.SERVER.fullMoonPreDuskWarningTicks.get())
+                && fullMoonPreDuskWarnedDay != day) {
+            fullMoonPreDuskWarnedDay = day;
+            broadcastChat(level, Component.translatable("enjoy_nights.fullmoon.pre_dusk")
+                    .withStyle(ChatFormatting.GOLD));
+        }
+    }
+
+    private static void broadcastChat(ServerLevel level, Component message) {
+        for (ServerPlayer player : level.players()) {
+            player.sendSystemMessage(message);
         }
     }
 

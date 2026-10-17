@@ -17,6 +17,8 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue fullMoonExperienceMultiplier;
         public final ModConfigSpec.DoubleValue fullMoonChargedCreeperChance;
         public final ModConfigSpec.DoubleValue bloodMoonChargedCreeperChance;
+        public final ModConfigSpec.BooleanValue fullMoonWarningEnabled;
+        public final ModConfigSpec.IntValue fullMoonPreDuskWarningTicks;
         public final ModConfigSpec.IntValue paranoiaDurationSeconds;
         public final ModConfigSpec.BooleanValue paranoiaWeaknessEnabled;
 
@@ -36,6 +38,12 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.BooleanValue bloodMoonDarknessPulseEnabled;
         public final ModConfigSpec.BooleanValue bloodMoonIgnoreTorches;
         public final ModConfigSpec.DoubleValue bloodMoonFlameSkeletonChance;
+
+        // Blood Moon Anticipatory Warning Configurations
+        public final ModConfigSpec.BooleanValue bloodMoonWarningEnabled;
+        public final ModConfigSpec.IntValue bloodMoonWarningDaysBefore;
+        public final ModConfigSpec.BooleanValue bloodMoonPreDuskWarningEnabled;
+        public final ModConfigSpec.IntValue bloodMoonPreDuskWarningTicks;
 
         // Blood Moon Boss Configurations
         public final ModConfigSpec.BooleanValue bloodMoonBossEnabled;
@@ -121,6 +129,14 @@ public class EnjoyNightsConfig {
             bloodMoonChargedCreeperChance = builder
                     .comment("Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers during a Blood Moon (default: 0.25 = 25%)")
                     .defineInRange("bloodMoonChargedCreeperChance", 0.25, 0.0, 1.0);
+
+            fullMoonWarningEnabled = builder
+                    .comment("Whether a chat warning is sent shortly before nightfall on a Full Moon day so players can anticipate the event")
+                    .define("fullMoonWarningEnabled", true);
+
+            fullMoonPreDuskWarningTicks = builder
+                    .comment("Ticks before dusk (tick 12500) to send the Full Moon chat warning on a Full Moon day (default: 200 ticks = 10s; 20 ticks = 1 second)")
+                    .defineInRange("fullMoonPreDuskWarningTicks", 200, 20, 2000);
             builder.pop();
 
             builder.push("paranoia");
@@ -187,6 +203,22 @@ public class EnjoyNightsConfig {
             bloodMoonFlameSkeletonChance = builder
                     .comment("Probability (0.0 to 1.0) for skeletons to spawn as Flame Skeletons shooting fire arrows during Blood Moon (default: 0.15 = 15%)")
                     .defineInRange("bloodMoonFlameSkeletonChance", 0.15, 0.0, 1.0);
+
+            bloodMoonWarningEnabled = builder
+                    .comment("Whether a chat warning is broadcast a configurable number of days before a Blood Moon siege so players can prepare")
+                    .define("bloodMoonWarningEnabled", true);
+
+            bloodMoonWarningDaysBefore = builder
+                    .comment("Number of days before a Blood Moon to broadcast the advance chat warning (default: 3). Ignored if it is greater than or equal to bloodMoonIntervalDays")
+                    .defineInRange("bloodMoonWarningDaysBefore", 3, 1, 30);
+
+            bloodMoonPreDuskWarningEnabled = builder
+                    .comment("Whether a chat warning is sent shortly before nightfall on the Blood Moon day itself (in addition to the cinematic shown when night falls)")
+                    .define("bloodMoonPreDuskWarningEnabled", true);
+
+            bloodMoonPreDuskWarningTicks = builder
+                    .comment("Ticks before dusk (tick 12500) to send the Blood Moon pre-nightfall chat warning (default: 300 ticks = 15s; 20 ticks = 1 second)")
+                    .defineInRange("bloodMoonPreDuskWarningTicks", 300, 20, 2000);
             builder.pop();
 
             builder.push("blood_moon_boss");

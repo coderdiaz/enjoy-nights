@@ -53,6 +53,23 @@ public class EnjoyNightsCommands {
         source.sendSuccess(() -> Component.literal("Luna de Sangre activa: " + (isBloodMoon ? "SÍ" : "NO")).withStyle(isBloodMoon ? ChatFormatting.RED : ChatFormatting.GRAY), false);
         source.sendSuccess(() -> Component.literal("Días hasta próxima Luna de Sangre: " + daysUntilBloodMoon).withStyle(ChatFormatting.WHITE), false);
 
+        // Prediction of tonight's lunar event (useful while it is still daytime)
+        int tonightPhase = NightAndMoonHelper.getMoonPhaseForDay(day);
+        boolean tonightBloodMoon = NightAndMoonHelper.isBloodMoonDayNumber(level, day);
+        String tonightLabel;
+        if (tonightBloodMoon) {
+            tonightLabel = "Luna de Sangre (Blood Moon)";
+        } else if (tonightPhase == NightAndMoonHelper.MOON_PHASE_FULL) {
+            tonightLabel = "Luna Llena (Full Moon)";
+        } else if (tonightPhase == NightAndMoonHelper.MOON_PHASE_NEW) {
+            tonightLabel = "Luna Nueva (New Moon)";
+        } else {
+            tonightLabel = "Noche normal";
+        }
+        final String tonight = tonightLabel;
+        source.sendSuccess(() -> Component.literal("Evento de esta noche: " + tonight)
+                .withStyle(tonightBloodMoon ? ChatFormatting.RED : ChatFormatting.LIGHT_PURPLE), false);
+
         return 1;
     }
 
