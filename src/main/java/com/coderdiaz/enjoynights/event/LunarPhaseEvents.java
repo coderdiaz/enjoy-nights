@@ -25,6 +25,8 @@ public class LunarPhaseEvents {
     public static final String TAG_POWERED_MOB = "enjoy_nights:powered";
     public static final String TAG_EXTRA_SPAWN = "enjoy_nights:extra_spawn";
     public static final String TAG_FIRE_SKELETON = "enjoy_nights:fire_skeleton";
+    public static final String TAG_CAVE_SPIDER = "enjoy_nights:cave_spider";
+    public static final String TAG_WITHER_ELITE = "enjoy_nights:wither_elite";
 
     @SubscribeEvent
     public static void onLivingVisibility(LivingEvent.LivingVisibilityEvent event) {
@@ -68,10 +70,11 @@ public class LunarPhaseEvents {
                     com.coderdiaz.enjoynights.util.CreeperHelper.setPowered(creeper, true);
                 }
 
-                // Agility speed increase directly through attributes (no potion clouds)
+                // Agility speed increase through a removable modifier (no potion clouds),
+                // so it can be cleanly reverted when the event ends.
                 AttributeInstance speedAttr = creeper.getAttribute(Attributes.MOVEMENT_SPEED);
-                if (speedAttr != null) {
-                    speedAttr.setBaseValue(speedAttr.getBaseValue() * 1.15);
+                if (speedAttr != null && speedAttr.getModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.MODIFIER_CREEPER_SPEED) == null) {
+                    speedAttr.addPermanentModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.creeperSpeedModifier());
                 }
 
                 creeper.addTag(TAG_POWERED_MOB);
@@ -89,10 +92,11 @@ public class LunarPhaseEvents {
                     monster.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, -1, 0, false, true, true));
                 }
 
-                // Increase follow range to make mobs more aggressive
+                // Increase follow range via a removable modifier so mobs are more
+                // aggressive during the event but revert cleanly when it ends.
                 AttributeInstance followRange = monster.getAttribute(Attributes.FOLLOW_RANGE);
-                if (followRange != null) {
-                    followRange.setBaseValue(followRange.getBaseValue() + 16.0);
+                if (followRange != null && followRange.getModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.MODIFIER_FOLLOW_RANGE) == null) {
+                    followRange.addPermanentModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.followRangeModifier());
                 }
 
                 monster.addTag(TAG_POWERED_MOB);
@@ -129,15 +133,49 @@ public class LunarPhaseEvents {
                                     random.nextInt(5) - 2
                             );
                             if (serverLevel.getBlockState(companionPos).isAir()) {
-                                Mob companion = (Mob) monster.getType().create(serverLevel, EntitySpawnReason.NATURAL);
+                                // With a configured chance the companion is a poisonous
+                                // Cave Spider ambusher; otherwise it mirrors the source mob.
+                                boolean asCaveSpider = random.nextDouble() < EnjoyNightsConfig.SERVER.bloodMoonCaveSpiderChance.get();
+                                Mob companion = asCaveSpider
+                                        ? net.minecraft.world.entity.EntityType.CAVE_SPIDER.create(serverLevel, EntitySpawnReason.NATURAL)
+                                        : (Mob) monster.getType().create(serverLevel, EntitySpawnReason.NATURAL);
                                 if (companion != null) {
                                     companion.setPos(companionPos.getX() + 0.5, (double) companionPos.getY(), companionPos.getZ() + 0.5);
                                     companion.setYRot(random.nextFloat() * 360f);
                                     companion.addTag(TAG_EXTRA_SPAWN);
+                                    if (asCaveSpider) {
+                                        companion.addTag(TAG_CAVE_SPIDER);
+                                    }
                                     companion.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(companionPos), EntitySpawnReason.NATURAL, null);
                                     serverLevel.addFreshEntity(companion);
                                 }
                             }
+                        }
+                    }
+                }
+            }
+            // Rare standalone Witch on Full Moon (no sieges) as an eerie lone threat.
+            // Suppressed on Blood Moon nights, where witches arrive via siege waves.
+            if (isFullMoon && !isBloodMoon
+                    && event.getSpawnType() == EntitySpawnReason.NATURAL
+                    && !monster.getTags().contains(TAG_EXTRA_SPAWN)
+                    && random.nextDouble() < EnjoyNightsConfig.SERVER.fullMoonWitchChance.get()
+                    && event.getLevel() instanceof ServerLevel serverLevel) {
+                AABB witchBox = monster.getBoundingBox().inflate(24.0);
+                // Only one lone witch nearby at a time to preserve the "rare encounter" feel.
+                boolean witchNearby = !serverLevel.getEntitiesOfClass(
+                        net.minecraft.world.entity.monster.Witch.class, witchBox).isEmpty();
+                if (!witchNearby) {
+                    BlockPos witchPos = monster.blockPosition().offset(
+                            random.nextInt(5) - 2, 0, random.nextInt(5) - 2);
+                    if (serverLevel.getBlockState(witchPos).isAir()) {
+                        Mob witch = net.minecraft.world.entity.EntityType.WITCH.create(serverLevel, EntitySpawnReason.NATURAL);
+                        if (witch != null) {
+                            witch.setPos(witchPos.getX() + 0.5, (double) witchPos.getY(), witchPos.getZ() + 0.5);
+                            witch.setYRot(random.nextFloat() * 360f);
+                            witch.addTag(TAG_EXTRA_SPAWN);
+                            witch.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(witchPos), EntitySpawnReason.NATURAL, null);
+                            serverLevel.addFreshEntity(witch);
                         }
                     }
                 }
@@ -179,6 +217,12 @@ public class LunarPhaseEvents {
             // Guarantee that flame skeletons never drop any bow or chainmail helmet
             event.getDrops().removeIf(drop -> drop.getItem().is(net.minecraft.world.item.Items.BOW)
                     || drop.getItem().is(net.minecraft.world.item.Items.CHAINMAIL_HELMET));
+        }
+
+        // Elite Blood Moon Wither Skeletons must never drop a wither skeleton skull, so
+        // the only legitimate source remains hunting them in the Nether.
+        if (event.getEntity().getTags().contains(TAG_WITHER_ELITE)) {
+            event.getDrops().removeIf(drop -> drop.getItem().is(net.minecraft.world.item.Items.WITHER_SKELETON_SKULL));
         }
     }
 

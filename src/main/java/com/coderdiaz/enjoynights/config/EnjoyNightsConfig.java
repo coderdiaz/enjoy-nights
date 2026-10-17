@@ -19,6 +19,8 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.DoubleValue bloodMoonChargedCreeperChance;
         public final ModConfigSpec.BooleanValue fullMoonWarningEnabled;
         public final ModConfigSpec.IntValue fullMoonPreDuskWarningTicks;
+        public final ModConfigSpec.BooleanValue eventMobCleanupEnabled;
+        public final ModConfigSpec.DoubleValue fullMoonWitchChance;
         public final ModConfigSpec.IntValue paranoiaDurationSeconds;
         public final ModConfigSpec.BooleanValue paranoiaWeaknessEnabled;
 
@@ -44,6 +46,27 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue bloodMoonWarningDaysBefore;
         public final ModConfigSpec.BooleanValue bloodMoonPreDuskWarningEnabled;
         public final ModConfigSpec.IntValue bloodMoonPreDuskWarningTicks;
+
+        // Blood Moon Siege Scale, Escalation & Composition Configurations
+        public final ModConfigSpec.IntValue bloodMoonSiegeWaveMinMobs;
+        public final ModConfigSpec.IntValue bloodMoonSiegeWaveMaxMobs;
+        public final ModConfigSpec.BooleanValue bloodMoonSiegeEscalationEnabled;
+        public final ModConfigSpec.IntValue bloodMoonSiegeMaxCapNight;
+        public final ModConfigSpec.IntValue bloodMoonSiegeEscalationWavesBeforeElite;
+        public final ModConfigSpec.IntValue bloodMoonWaveZombieWeight;
+        public final ModConfigSpec.IntValue bloodMoonWaveCaveSpiderWeight;
+        public final ModConfigSpec.IntValue bloodMoonWaveSkeletonWeight;
+        public final ModConfigSpec.IntValue bloodMoonWaveHuskWeight;
+        public final ModConfigSpec.IntValue bloodMoonWaveStrayWeight;
+        public final ModConfigSpec.IntValue bloodMoonWaveWitchWeight;
+        public final ModConfigSpec.IntValue bloodMoonWaveVindicatorWeight;
+        public final ModConfigSpec.IntValue bloodMoonWaveBreezeWeight;
+        public final ModConfigSpec.DoubleValue bloodMoonWitherSkeletonEliteChance;
+
+        // Blood Moon Cave Spider (poison ambusher) Configurations
+        public final ModConfigSpec.DoubleValue bloodMoonCaveSpiderChance;
+        public final ModConfigSpec.IntValue bloodMoonCaveSpiderPoisonSeconds;
+        public final ModConfigSpec.IntValue bloodMoonCaveSpiderPoisonAmplifier;
 
         // Blood Moon Boss Configurations
         public final ModConfigSpec.BooleanValue bloodMoonBossEnabled;
@@ -137,6 +160,14 @@ public class EnjoyNightsConfig {
             fullMoonPreDuskWarningTicks = builder
                     .comment("Ticks before dusk (tick 12500) to send the Full Moon chat warning on a Full Moon day (default: 200 ticks = 10s; 20 ticks = 1 second)")
                     .defineInRange("fullMoonPreDuskWarningTicks", 200, 20, 2000);
+
+            eventMobCleanupEnabled = builder
+                    .comment("Whether mobs spawned or empowered by Full Moon / Blood Moon events are cleaned up when the event ends (event-spawned mobs are removed; naturally-spawned empowered mobs are reverted to normal). Also cleans lingering/legacy event mobs when their chunk reloads outside an event. Prevents entity accumulation and performance loss")
+                    .define("eventMobCleanupEnabled", true);
+
+            fullMoonWitchChance = builder
+                    .comment("Chance (0.0 to 1.0) for a natural Full Moon monster spawn to be accompanied by a rare, eerie standalone Witch (default: 0.03 = 3%). Full Moon has no sieges; this is a lone atmospheric threat")
+                    .defineInRange("fullMoonWitchChance", 0.03, 0.0, 1.0);
             builder.pop();
 
             builder.push("paranoia");
@@ -219,6 +250,74 @@ public class EnjoyNightsConfig {
             bloodMoonPreDuskWarningTicks = builder
                     .comment("Ticks before dusk (tick 12500) to send the Blood Moon pre-nightfall chat warning (default: 300 ticks = 15s; 20 ticks = 1 second)")
                     .defineInRange("bloodMoonPreDuskWarningTicks", 300, 20, 2000);
+
+            bloodMoonSiegeWaveMinMobs = builder
+                    .comment("Minimum number of mobs spawned per player in a single Blood Moon siege wave (default: 3)")
+                    .defineInRange("bloodMoonSiegeWaveMinMobs", 3, 1, 20);
+
+            bloodMoonSiegeWaveMaxMobs = builder
+                    .comment("Maximum number of mobs spawned per player in a single Blood Moon siege wave before escalation (default: 5)")
+                    .defineInRange("bloodMoonSiegeWaveMaxMobs", 5, 1, 30);
+
+            bloodMoonSiegeEscalationEnabled = builder
+                    .comment("Whether siege waves grow larger and unlock rare units as the Blood Moon night progresses (default: true)")
+                    .define("bloodMoonSiegeEscalationEnabled", true);
+
+            bloodMoonSiegeMaxCapNight = builder
+                    .comment("Maximum hostile mobs within 32 blocks of a player during a Blood Moon siege at full escalation (anti-lag ceiling; should be >= bloodMoonMaxNearbyMobs, default: 24)")
+                    .defineInRange("bloodMoonSiegeMaxCapNight", 24, 4, 80);
+
+            bloodMoonSiegeEscalationWavesBeforeElite = builder
+                    .comment("Number of siege waves that must pass (and it must be past midnight, tick 18000) before rare escalation units (husk, stray, witch, vindicator, breeze, elite wither skeleton) can appear (default: 3)")
+                    .defineInRange("bloodMoonSiegeEscalationWavesBeforeElite", 3, 0, 20);
+
+            bloodMoonWaveZombieWeight = builder
+                    .comment("Relative spawn weight of Zombies in siege waves (core unit, default: 30)")
+                    .defineInRange("bloodMoonWaveZombieWeight", 30, 0, 100);
+
+            bloodMoonWaveCaveSpiderWeight = builder
+                    .comment("Relative spawn weight of poisonous Cave Spiders in siege waves (core unit, default: 15)")
+                    .defineInRange("bloodMoonWaveCaveSpiderWeight", 15, 0, 100);
+
+            bloodMoonWaveSkeletonWeight = builder
+                    .comment("Relative spawn weight of Skeletons in siege waves (core unit, default: 15)")
+                    .defineInRange("bloodMoonWaveSkeletonWeight", 15, 0, 100);
+
+            bloodMoonWaveHuskWeight = builder
+                    .comment("Relative spawn weight of Husks in siege waves (rare escalation unit, applies Hunger, default: 8)")
+                    .defineInRange("bloodMoonWaveHuskWeight", 8, 0, 100);
+
+            bloodMoonWaveStrayWeight = builder
+                    .comment("Relative spawn weight of Strays in siege waves (rare escalation unit, arrows apply Slowness, default: 8)")
+                    .defineInRange("bloodMoonWaveStrayWeight", 8, 0, 100);
+
+            bloodMoonWaveWitchWeight = builder
+                    .comment("Relative spawn weight of Witches in siege waves (rare escalation support unit, throws debuff potions, default: 4)")
+                    .defineInRange("bloodMoonWaveWitchWeight", 4, 0, 100);
+
+            bloodMoonWaveVindicatorWeight = builder
+                    .comment("Relative spawn weight of Vindicators in siege waves (rare escalation shock troop, high melee damage, default: 3)")
+                    .defineInRange("bloodMoonWaveVindicatorWeight", 3, 0, 100);
+
+            bloodMoonWaveBreezeWeight = builder
+                    .comment("Relative spawn weight of Breezes in siege waves (rare escalation anti-fortification unit, fires wind charges, default: 2)")
+                    .defineInRange("bloodMoonWaveBreezeWeight", 2, 0, 100);
+
+            bloodMoonWitherSkeletonEliteChance = builder
+                    .comment("Chance (0.0 to 1.0) for a single late-wave siege slot to spawn an elite Wither Skeleton (applies Wither on hit, gains Resistance; NOT the Crimson boss) (default: 0.01 = 1%)")
+                    .defineInRange("bloodMoonWitherSkeletonEliteChance", 0.01, 0.0, 1.0);
+
+            bloodMoonCaveSpiderChance = builder
+                    .comment("Chance (0.0 to 1.0) for a natural Blood Moon monster spawn to be accompanied by a poisonous Cave Spider ambusher (default: 0.20 = 20%)")
+                    .defineInRange("bloodMoonCaveSpiderChance", 0.20, 0.0, 1.0);
+
+            bloodMoonCaveSpiderPoisonSeconds = builder
+                    .comment("Duration in seconds of the Poison effect applied when a Blood Moon Cave Spider hits a player (default: 5s)")
+                    .defineInRange("bloodMoonCaveSpiderPoisonSeconds", 5, 1, 60);
+
+            bloodMoonCaveSpiderPoisonAmplifier = builder
+                    .comment("Amplifier of the Poison effect applied by Blood Moon Cave Spiders (0 = Poison I, 1 = Poison II, default: 0)")
+                    .defineInRange("bloodMoonCaveSpiderPoisonAmplifier", 0, 0, 4);
             builder.pop();
 
             builder.push("blood_moon_boss");
