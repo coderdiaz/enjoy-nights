@@ -3,12 +3,16 @@ package com.coderdiaz.enjoynights.util;
 import com.coderdiaz.enjoynights.entity.BloodMoonBossManager;
 import com.coderdiaz.enjoynights.event.LunarPhaseEvents;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.level.Level;
 
 /**
  * Centralizes the lifecycle cleanup of mobs created or empowered by lunar events
@@ -31,6 +35,13 @@ public final class EventMobCleanup {
     /** Movement-speed bonus granted to empowered creepers (+15%). */
     public static final Identifier MODIFIER_CREEPER_SPEED =
             Identifier.fromNamespaceAndPath("enjoy_nights", "lunar_creeper_speed");
+
+    /**
+     * Vanilla entity event that makes clients play the death "poof" particle burst
+     * (the smoke cloud shown when a mob dies). Broadcasting it reproduces the normal
+     * death visual without running the loot/XP drop logic.
+     */
+    private static final byte ENTITY_EVENT_DEATH_POOF = 60;
 
     /** The outcome of evaluating a single tagged mob, for diagnostics/counting. */
     public enum Action {
@@ -69,7 +80,7 @@ public final class EventMobCleanup {
             if (isBoss && bossActive) {
                 return Action.NONE;
             }
-            mob.discard();
+            discardWithDeathEffect(mob);
             return Action.DELETED;
         }
 
@@ -78,14 +89,14 @@ public final class EventMobCleanup {
             if (bossActive) {
                 return Action.NONE;
             }
-            mob.discard();
+            discardWithDeathEffect(mob);
             return Action.DELETED;
         }
 
         // Naturally-spawned, merely-empowered mob.
         if (isPowered) {
             if (forceDelete) {
-                mob.discard();
+                discardWithDeathEffect(mob);
                 return Action.DELETED;
             }
             stripEventBuffs(mob);
@@ -93,6 +104,30 @@ public final class EventMobCleanup {
         }
 
         return Action.NONE;
+    }
+
+    /**
+     * Removes an event mob while reproducing the vanilla death visual/sound, so it
+     * reads as "eliminated" rather than silently vanishing. Drops are intentionally
+     * skipped: these mobs were not defeated by a player, so {@link Mob#discard()} is
+     * used instead of {@link Mob#die}, which would roll loot and XP.
+     *
+     * <p>Only runs its effects on a {@link ServerLevel}; the entity-event broadcast
+     * reaches tracking clients, which play the {@code POOF} particle burst locally.
+     */
+    private static void discardWithDeathEffect(Mob mob) {
+        Level level = mob.level();
+        if (level instanceof ServerLevel serverLevel && !serverLevel.isClientSide()) {
+            serverLevel.broadcastEntityEvent(mob, ENTITY_EVENT_DEATH_POOF);
+            serverLevel.playSound(
+                    null,
+                    mob.getX(), mob.getY(), mob.getZ(),
+                    SoundEvents.GENERIC_DEATH,
+                    SoundSource.HOSTILE,
+                    0.7F,
+                    mob.getVoicePitch());
+        }
+        mob.discard();
     }
 
     /**

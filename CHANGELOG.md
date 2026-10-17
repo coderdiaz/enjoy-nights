@@ -21,6 +21,7 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 * **Boss leap:** Reworked into a committed, directed jump that lands on a targeted player and unleashes a dispersal shockwave, with clearer telegraphs and punish windows so heavy moves no longer chain unfairly.
 * **Crimson Altar appearance:** Now uses a custom summoning-altar model (with ambient particles while awaiting a Blood Moon) instead of reusing the respawn anchor textures.
 * **Blood Moon scope:** The event now only affects players in the Overworld.
+* **Event mob cleanup visuals:** When a lunar event ends, removed mobs now play the vanilla death "poof" particle burst and a death sound instead of vanishing silently, so the sweep reads as them being eliminated. These mobs drop no items or XP, since they were not defeated by a player.
 
 ### Fixed
 * **Boss lingering after dawn:** An undefeated boss could survive past the end of the Blood Moon while time was frozen; it now always despawns without rewards when the event ends.
