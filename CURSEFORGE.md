@@ -96,6 +96,7 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         bloodMoonSiegeWavesEnabled = true
         bloodMoonWaveIntervalSeconds = 30
         bloodMoonMaxNearbyMobs = 16
+        bloodMoonDarknessPulseEnabled = true
 
 [client]
     bloodMoonFogTint = true
@@ -104,6 +105,8 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
     bloodMoonComplementarySpecific = true
     bloodMoonParticles = true
     paranoiaSoundsEnabled = true
+    bloodMoonPhantomFootstepsEnabled = true
+    bloodMoonShaderAtmosphereIntensity = 0.35
 ```
 
 ---

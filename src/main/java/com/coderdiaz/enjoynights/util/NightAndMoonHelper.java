@@ -10,15 +10,18 @@ public class NightAndMoonHelper {
     private static boolean forceBloodMoon = false;
 
     public static boolean isNight(Level level) {
+        if (level == null) return false;
         long timeOfDay = level.getDayTime() % 24000L;
         return timeOfDay >= 12500L && timeOfDay <= 23500L;
     }
 
     public static long getDay(Level level) {
+        if (level == null) return 0;
         return level.getDayTime() / 24000L;
     }
 
     public static int getMoonPhase(Level level) {
+        if (level == null) return 0;
         return (int) (level.getDayTime() / 24000L % 8L + 8L) % 8;
     }
 
@@ -31,6 +34,10 @@ public class NightAndMoonHelper {
     }
 
     public static boolean isBloodMoon(Level level) {
+        if (level == null) {
+            return false;
+        }
+
         if (!EnjoyNightsConfig.SERVER.bloodMoonSiegeEnabled.get()) {
             return false;
         }
@@ -57,6 +64,7 @@ public class NightAndMoonHelper {
     }
 
     public static long getDaysUntilNextBloodMoon(Level level) {
+        if (level == null) return 0;
         long currentDay = getDay(level);
         int interval = EnjoyNightsConfig.SERVER.bloodMoonIntervalDays.get();
         if (interval <= 0) return 0;

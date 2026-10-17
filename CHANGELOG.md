@@ -4,6 +4,16 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
+## [1.1.1] - 2026-09-19
+
+### 🐛 Bug Fixes
+* **Fixed Darkness Effect Loop & Sky Flickering:**
+  * Removed unintended `MobEffects.DARKNESS` application on New Moon nights (the darkness pulse effect is exclusive to Blood Moon horror mechanics).
+  * Fixed active darkness effect removal in `BloodMoonEvents` running continuously on every server tick during non-Blood Moon periods. The removal now executes strictly when a Blood Moon event concludes, resolving the rapid effect add/remove loop that caused severe visual sky and lighting flickering across New Moon and other nights.
+  * Added null-safety guards across all `NightAndMoonHelper` lunar calculation methods.
+
+---
+
 ## [1.1.0] - 2026-09-18
 
 ### 🚀 Features & Balance
