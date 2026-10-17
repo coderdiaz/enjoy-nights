@@ -79,6 +79,10 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 
 ### 10. Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Crimson Altar Ritual
 * **Crimson Altar Ritual Summoning (`crimson_altar`):** Rather than forced random spawns, the boss is summoned by crafting and placing the **Crimson Altar** during a Blood Moon night on the surface under open sky (`bloodMoonBossRequireRitual = true`).
+* **Overworld Only:** The altar can only be placed in the Overworld; attempting to place it in the Nether or End is rejected and returns the item.
+* **Diamond-Tier Mining:** The altar only drops when mined with a **diamond pickaxe or better**; breaking it with any lesser or incorrect tool destroys it without a drop.
+* **Inert Outside a Blood Moon:** If placed when it is not a Blood Moon night, the altar simply stays put and does nothing — it is not consumed and the item is not refunded. You can mine it back (diamond+ pickaxe) since no boss was summoned, or **right-click it once a Blood Moon night arrives** to begin the ritual.
+* **Indestructible During the Ritual:** Once the summon begins, the altar cannot be mined to abort it; the ritual completes and consumes the altar as the boss rises.
 * **Strict Surface Requirement (No Caves):** The ritual strictly rejects attempts underground or without direct sky access (`canSeeSky`), protecting players from cramped subterranean glitches and returning the altar to their inventory.
 * **1000-Block Dynamic Player Scaling:** Before spawning, the altar scans for all active players within a **1000-block radius** (`bloodMoonBossScalingRadius = 1000.0`), dynamically scaling boss health ($200\text{ HP} + 100\text{ HP}$ per extra player) while keeping base damage consistent at 14.0 for fair survival.
 * **10-Minute Freeze & Dawn Despawn:**
@@ -91,7 +95,7 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * **Elden Ring-Style Moveset & Telegraphed Attacks:**
   * **Conical Cleave Attack:** Sweeping netherite axe swings deal damage in a 140° frontal cone to all players in melee reach.
   * **Telegraphed Charged Lunge & Sweeping Dash:** Winds up with raised blade and dynamic target tracking, then charges forward delivering a 140° wide sweep with massive damage and knockback.
-  * **Devastating Leap Slam (Anti-Kiting):** When targets stay between 8 and 24 blocks away, the boss launches into the air and slams down, inflicting AoE damage and **disabling shields for 5 seconds**.
+  * **Devastating Leap Slam (Anti-Kiting & Anti-Gank):** When targets stay between 8 and 24 blocks away, the boss performs a committed leap that arcs through the air and lands on a targeted player (tracking them mid-air, with a ground impact-zone telegraph), forcing the group to scatter. On landing it unleashes a dispersal shockwave (`bloodMoonBossLeapRadius`, `bloodMoonBossLeapKnockback`) that blasts surrounding players away and **disables shields for 5 seconds**.
   * **Ground Fissure:** Slams the ground launching all nearby players into the air with vertical knockup.
   * **Repulsion Wave (Anti-Gank):** If 3 or more players crowd the boss within 3.5 blocks, emits a concussive shockwave blasting everyone back.
   * **Punish Windows (Recovery Frames):** After unleashing heavy moves (Leap, Shockwave, or Charged Lunge), the boss pauses for ~1.75s (`bloodMoonBossRecoveryTicks = 35`), giving observant players a window to punish and counterattack.
@@ -227,6 +231,11 @@ All mechanics are 100% customizable:
         bloodMoonBossBaseHealth = 200.0
         # Extra health added per nearby player in 1000 blocks (default: 100.0 = 50 hearts)
         bloodMoonBossHealthPerPlayer = 100.0
+        # Diminishing returns on group health scaling (large groups don't face an impossible wall)
+        bloodMoonBossHealthDiminishAfterPlayers = 3
+        bloodMoonBossHealthDiminishFactor = 0.6
+        # Cap on reinforcement minions summoned per health phase (75%/50%/25%)
+        bloodMoonBossMaxMinionsPerPhase = 4
         # Base total attack damage (default: 14.0, balanced for Diamond/Netherite)
         bloodMoonBossBaseDamage = 14.0
         # Extra attack damage per nearby player (default: 0.0, damage does not scale per player)
@@ -263,6 +272,9 @@ All mechanics are 100% customizable:
         bloodMoonBossLeapAttackEnabled = true
         # Cooldown in seconds between leap slam attacks (default: 14s)
         bloodMoonBossLeapCooldownSeconds = 14
+        # Leap slam landing shockwave: radius and outward knockback that disperses the group
+        bloodMoonBossLeapRadius = 6.0
+        bloodMoonBossLeapKnockback = 1.6
         # Cooldown in seconds between ground shockwave attacks (default: 18s)
         bloodMoonBossShockwaveCooldownSeconds = 18
         # Enable telegraphed charged lunge & sweeping dash attack
