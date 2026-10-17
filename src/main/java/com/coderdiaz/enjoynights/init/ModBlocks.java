@@ -29,6 +29,7 @@ public class ModBlocks {
                     .strength(4.0F, 1200.0F)
                     .sound(SoundType.STONE)
                     .lightLevel(state -> state.getValue(CrimsonAltarBlock.RITUAL_ACTIVE) ? 12 : 3)
+                    .noOcclusion()
                     .requiresCorrectToolForDrops()
     );
 }
