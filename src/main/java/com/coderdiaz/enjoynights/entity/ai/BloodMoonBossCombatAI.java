@@ -48,6 +48,9 @@ public class BloodMoonBossCombatAI {
     private int meleeSwingCooldown = 0;
     private int recoveryTicks = 0;
     private int meleeComboStep = 0;
+    // Short shared lockout between heavy moves (leap/shockwave/charged lunge) so they
+    // never chain back-to-back and overwhelm players. Gives a readable rhythm.
+    private int globalAbilityCooldown = 0;
 
     private int windupTicks = 0;
     private WindupType activeWindup = WindupType.NONE;
@@ -92,6 +95,30 @@ public class BloodMoonBossCombatAI {
 
         // 3. Handle active leap in progress
         if (isInLeap) {
+            // Subtle in-air homing: nudge horizontal velocity toward the live target so
+            // the leap tracks a fleeing player without looking teleport-guided.
+            Player leapTarget = (chargedLungeTarget != null && chargedLungeTarget.isAlive())
+                    ? chargedLungeTarget
+                    : (boss.getTarget() instanceof Player tp && tp.isAlive() ? tp : null);
+            if (leapTarget != null) {
+                Vec3 toTarget = leapTarget.position().subtract(boss.position());
+                Vec3 flatDir = new Vec3(toTarget.x, 0, toTarget.z);
+                if (flatDir.lengthSqr() > 0.01) {
+                    flatDir = flatDir.normalize();
+                    Vec3 move = boss.getDeltaMovement();
+                    double horizSpeed = Math.sqrt(move.x * move.x + move.z * move.z);
+                    // Blend current heading with the target direction (gentle correction).
+                    Vec3 newHoriz = new Vec3(move.x, 0, move.z).normalize().scale(0.82)
+                            .add(flatDir.scale(0.18)).normalize().scale(horizSpeed);
+                    boss.setDeltaMovement(newHoriz.x, move.y, newHoriz.z);
+                    leapTargetPos = leapTarget.position();
+                }
+                // Telegraph the predicted impact zone on the ground so players can scatter.
+                level.sendParticles(ParticleTypes.FLAME,
+                        leapTarget.getX(), leapTarget.getY() + 0.05, leapTarget.getZ(),
+                        6, 1.2, 0.05, 1.2, 0.0);
+            }
+
             level.sendParticles(
                     ParticleTypes.SOUL_FIRE_FLAME,
                     boss.getX(),
@@ -173,6 +200,18 @@ public class BloodMoonBossCombatAI {
                         0.25,
                         0.01
                 );
+
+                // Ground AoE telegraph: outline the danger zone so players can read and dodge it.
+                double telegraphRadius = activeWindup == WindupType.SHOCKWAVE ? 5.0
+                        : EnjoyNightsConfig.SERVER.bloodMoonBossLeapRadius.get();
+                Vec3 center = activeWindup == WindupType.LEAP && leapTargetPos != null
+                        ? leapTargetPos : boss.position();
+                for (int a = 0; a < 10; a++) {
+                    double ang = (Math.PI * 2 / 10) * a;
+                    double rx = center.x + Math.cos(ang) * telegraphRadius;
+                    double rz = center.z + Math.sin(ang) * telegraphRadius;
+                    level.sendParticles(ParticleTypes.FLAME, rx, center.y + 0.05, rz, 1, 0.0, 0.0, 0.0, 0.0);
+                }
             }
 
             if (windupTicks == 0) {
@@ -194,6 +233,7 @@ public class BloodMoonBossCombatAI {
         if (chargedAttackCooldown > 0) chargedAttackCooldown--;
         if (repulsionCooldown > 0) repulsionCooldown--;
         if (meleeSwingCooldown > 0) meleeSwingCooldown--;
+        if (globalAbilityCooldown > 0) globalAbilityCooldown--;
         if (targetCommitmentTicks > 0) targetCommitmentTicks--;
 
         // 7. Target rotation and commitment system
@@ -215,24 +255,28 @@ public class BloodMoonBossCombatAI {
         }
 
         // 9. Ability: Devastating Leap (Anti-Campers / Anti-Archers at long distance)
-        if (currentTarget != null && EnjoyNightsConfig.SERVER.bloodMoonBossLeapAttackEnabled.get() && leapCooldown <= 0) {
+        if (currentTarget != null && EnjoyNightsConfig.SERVER.bloodMoonBossLeapAttackEnabled.get()
+                && leapCooldown <= 0 && globalAbilityCooldown <= 0) {
             double dist = boss.distanceTo(currentTarget);
             if (dist >= 8.0 && dist <= 24.0) {
                 activeWindup = WindupType.LEAP;
                 windupTicks = 22; // 1.1s windup telegraph
                 leapTargetPos = currentTarget.position();
+                globalAbilityCooldown = 40; // 2s lockout before another heavy move
                 level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 1.3F, 1.7F);
                 return;
             }
         }
 
         // 10. Ability: Telegraphed Charged Lunge & Sweep (Mid-range power move)
-        if (currentTarget != null && EnjoyNightsConfig.SERVER.bloodMoonBossChargedAttackEnabled.get() && chargedAttackCooldown <= 0) {
+        if (currentTarget != null && EnjoyNightsConfig.SERVER.bloodMoonBossChargedAttackEnabled.get()
+                && chargedAttackCooldown <= 0 && globalAbilityCooldown <= 0) {
             double dist = boss.distanceTo(currentTarget);
             if (dist >= 2.5 && dist <= 8.5) {
                 activeWindup = WindupType.CHARGED_LUNGE;
                 windupTicks = 30; // 1.5s charge telegraph (clear reaction window)
                 chargedLungeTarget = currentTarget;
+                globalAbilityCooldown = 40;
                 level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.HOSTILE, 1.3F, 0.8F);
                 level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 1.4F, 0.85F);
                 return;
@@ -240,11 +284,12 @@ public class BloodMoonBossCombatAI {
         }
 
         // 11. Ability: Ground Shockwave / Fissure (Close range knockup)
-        if (currentTarget != null && shockwaveCooldown <= 0) {
+        if (currentTarget != null && shockwaveCooldown <= 0 && globalAbilityCooldown <= 0) {
             double dist = boss.distanceTo(currentTarget);
             if (dist <= 4.0) {
                 activeWindup = WindupType.SHOCKWAVE;
                 windupTicks = 20; // 1.0s telegraph
+                globalAbilityCooldown = 40;
                 level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 1.2F, 0.5F);
                 return;
             }
@@ -305,29 +350,48 @@ public class BloodMoonBossCombatAI {
 
         Vec3 diff = leapTargetPos.subtract(boss.position());
         double horizontalDist = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
-        if (horizontalDist < 1.0) {
-            horizontalDist = 1.0;
+        if (horizontalDist < 0.5) {
+            horizontalDist = 0.5;
         }
 
-        double speedFactor = Math.min(1.4, Math.max(0.7, horizontalDist * 0.08));
+        // Ballistic jump: a tall vertical impulse for a clear attack arc (not a hop),
+        // and a horizontal velocity sized to actually reach the target's distance. The
+        // horizontal component grows with distance so the boss lunges across the gap and
+        // lands on the targeted player, forcing the group to scatter.
+        double verticalImpulse = 0.95;
+        double horizontalSpeed = Math.min(2.4, 0.42 + horizontalDist * 0.14);
         Vec3 jumpVec = new Vec3(
-                diff.x * (speedFactor / horizontalDist),
-                0.78,
-                diff.z * (speedFactor / horizontalDist)
+                (diff.x / horizontalDist) * horizontalSpeed,
+                verticalImpulse,
+                (diff.z / horizontalDist) * horizontalSpeed
         );
 
         boss.setDeltaMovement(jumpVec);
+        boss.hurtMarked = true;
         isInLeap = true;
-        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 1.2F, 0.5F);
+
+        // Aim the body at the destination for a committed, readable leap.
+        float yaw = (float) (Mth.atan2(diff.z, diff.x) * (180.0 / Math.PI)) - 90.0F;
+        boss.setYRot(yaw);
+        boss.yBodyRot = yaw;
+
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WITHER_SHOOT, SoundSource.HOSTILE, 1.3F, 0.5F);
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.ENDER_DRAGON_FLAP, SoundSource.HOSTILE, 1.4F, 0.7F);
     }
 
     private void executeLeapImpact(ServerLevel level) {
-        level.sendParticles(ParticleTypes.EXPLOSION, boss.getX(), boss.getY() + 0.2, boss.getZ(), 3, 0.5, 0.2, 0.5, 0.0);
-        level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, boss.getX(), boss.getY() + 0.2, boss.getZ(), 35, 1.6, 0.2, 1.6, 0.15);
-        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 1.5F, 0.75F);
+        double radius = EnjoyNightsConfig.SERVER.bloodMoonBossLeapRadius.get();
+        double knockback = EnjoyNightsConfig.SERVER.bloodMoonBossLeapKnockback.get();
+
+        level.sendParticles(ParticleTypes.EXPLOSION, boss.getX(), boss.getY() + 0.2, boss.getZ(), 4, 0.6, 0.2, 0.6, 0.0);
+        level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, boss.getX(), boss.getY() + 0.2, boss.getZ(), 50, radius * 0.3, 0.2, radius * 0.3, 0.18);
+        // Expanding ring telegraph of the dispersal wave.
+        level.sendParticles(ParticleTypes.SWEEP_ATTACK, boss.getX(), boss.getY() + 0.3, boss.getZ(), 6, radius * 0.4, 0.1, radius * 0.4, 0.0);
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 1.6F, 0.7F);
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.HOSTILE, 1.2F, 1.1F);
 
         float baseDmg = (float) boss.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.20F;
-        AABB impactBox = boss.getBoundingBox().inflate(6.0);
+        AABB impactBox = boss.getBoundingBox().inflate(radius);
         List<Player> victims = level.getEntitiesOfClass(Player.class, impactBox, p -> !p.isSpectator() && p.isAlive());
 
         for (Player p : victims) {
@@ -342,10 +406,17 @@ public class BloodMoonBossCombatAI {
                 level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.SHIELD_BREAK.value(), SoundSource.PLAYERS, 1.3F, 0.8F);
             }
 
-            p.hurtServer(level, level.damageSources().mobAttack(boss), baseDmg);
+            // Damage falls off with distance so the epicentre is the dangerous spot.
+            double dist = Math.sqrt(p.distanceToSqr(boss));
+            double falloff = Math.max(0.35, 1.0 - (dist / (radius + 1.0)));
+            p.hurtServer(level, level.damageSources().mobAttack(boss), baseDmg * (float) falloff);
 
-            // Push outward
-            Vec3 push = p.position().subtract(boss.position()).normalize().scale(1.2).add(0, 0.35, 0);
+            // Strong outward dispersal wave: push everyone away to force the group to scatter.
+            Vec3 push = p.position().subtract(boss.position());
+            if (push.lengthSqr() < 0.01) {
+                push = new Vec3(level.getRandom().nextDouble() - 0.5, 0, level.getRandom().nextDouble() - 0.5);
+            }
+            push = push.normalize().scale(knockback).add(0, 0.45, 0);
             p.setDeltaMovement(push);
             p.hurtMarked = true;
         }

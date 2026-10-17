@@ -26,6 +26,7 @@
   "block.enjoy_nights.crimson_altar": "Crimson Altar",
   "item.enjoy_nights.crimson_altar": "Crimson Altar",
   "enjoy_nights.altar.error.caves": "The blood ritual demands the open sky of the surface. It cannot be performed underground!",
+  "enjoy_nights.altar.error.overworld_only": "The Crimson Altar can only be placed in the Overworld.",
   "enjoy_nights.altar.error.not_blood_moon": "The Crimson Altar remains dormant. It only awakens under the light of the Blood Moon.",
   "enjoy_nights.altar.error.already_active": "The Crimson Harbinger already walks these lands!",
   "enjoy_nights.altar.ritual_started": "The blood ritual has commenced! The Crimson Harbinger is awakening...",

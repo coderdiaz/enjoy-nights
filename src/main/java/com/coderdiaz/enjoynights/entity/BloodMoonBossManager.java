@@ -128,6 +128,22 @@ public class BloodMoonBossManager {
                 }
                 combatAI.tick(level);
 
+                // END-OF-EVENT CHECK (runs BEFORE the time freeze): if the Blood Moon has
+                // concluded for any reason (schedule rolled over, /bloodmoon stop, morning
+                // reached) the boss must not survive. The freeze must never keep it alive.
+                boolean eventOver = !isBloodMoon || !isNight || timeOfDay >= 23500L;
+                if (eventOver) {
+                    // Cancel any remaining freeze and let time flow naturally toward dawn.
+                    freezeTimeRemainingTicks = 0;
+                    if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get()) {
+                        despawnBossOnDawn(level, boss);
+                    } else {
+                        cleanupBossBar();
+                        activeBossUuid = null;
+                    }
+                    return;
+                }
+
                 // TIME FREEZE: Lock time at midnight for up to 10 minutes (freezeDurationSeconds)
                 if (EnjoyNightsConfig.SERVER.bloodMoonBossFreezeTime.get() && freezeTimeRemainingTicks > 0) {
                     long midnightDayTime = (dayTime / 24000L) * 24000L + 18000L;
@@ -144,12 +160,6 @@ public class BloodMoonBossManager {
                             player.sendSystemMessage(unfreezeMsg);
                             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_DEACTIVATE, SoundSource.AMBIENT, 1.2F, 0.8F);
                         }
-                    }
-                } else if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get()) {
-                    // Natural time flow toward dawn: check if morning arrived (tick 23500+ or daytime)
-                    if (timeOfDay >= 23500L || !NightAndMoonHelper.isNight(level)) {
-                        despawnBossOnDawn(level, boss);
-                        return;
                     }
                 }
 
@@ -183,17 +193,18 @@ public class BloodMoonBossManager {
                     AABB scanArea = new AABB(boss.blockPosition()).inflate(scaleRadius);
                     int nearbyCount = level.getEntitiesOfClass(ServerPlayer.class, scanArea, p -> !p.isSpectator()).size();
                     int groupBonus = Math.max(0, nearbyCount - 1);
+                    int maxPerPhase = EnjoyNightsConfig.SERVER.bloodMoonBossMaxMinionsPerPhase.get();
 
                     if (hpRatio <= 0.75F && !summonedPhases.contains(75)) {
-                        summonMinions(level, boss, Math.min(5, 2 + groupBonus));
+                        summonMinions(level, boss, Math.min(maxPerPhase, 2 + groupBonus));
                         summonedPhases.add(75);
                     }
                     if (hpRatio <= 0.50F && !summonedPhases.contains(50)) {
-                        summonMinions(level, boss, Math.min(6, 3 + groupBonus));
+                        summonMinions(level, boss, Math.min(maxPerPhase, 3 + groupBonus));
                         summonedPhases.add(50);
                     }
                     if (hpRatio <= 0.25F && !summonedPhases.contains(25)) {
-                        summonMinions(level, boss, Math.min(6, 3 + groupBonus));
+                        summonMinions(level, boss, Math.min(maxPerPhase, 3 + groupBonus));
                         boss.addEffect(new MobEffectInstance(MobEffects.SPEED, -1, 0, false, true, true));
                         summonedPhases.add(25);
                     }
@@ -275,7 +286,16 @@ public class BloodMoonBossManager {
         // Attributes: ONLY health scales with player count! Damage is balanced and predictable.
         double baseHealth = EnjoyNightsConfig.SERVER.bloodMoonBossBaseHealth.get();
         double healthPerPlayer = EnjoyNightsConfig.SERVER.bloodMoonBossHealthPerPlayer.get();
-        double totalHealth = baseHealth + extraPlayers * healthPerPlayer;
+        // Diminishing returns: the first N extra players add full health; beyond that,
+        // each additional player contributes a reduced fraction so large groups do not
+        // face an impossible health wall given their shared DPS.
+        int diminishAfter = EnjoyNightsConfig.SERVER.bloodMoonBossHealthDiminishAfterPlayers.get();
+        double diminishFactor = EnjoyNightsConfig.SERVER.bloodMoonBossHealthDiminishFactor.get();
+        long fullPlayers = Math.min(extraPlayers, diminishAfter);
+        long reducedPlayers = Math.max(0, extraPlayers - diminishAfter);
+        double totalHealth = baseHealth
+                + fullPlayers * healthPerPlayer
+                + reducedPlayers * healthPerPlayer * diminishFactor;
 
         // Base target damage (default 14.0). Netherite Axe adds +9.0 via item attribute modifier.
         double targetDamage = EnjoyNightsConfig.SERVER.bloodMoonBossBaseDamage.get();
@@ -450,11 +470,12 @@ public class BloodMoonBossManager {
         AABB roarBox = boss.getBoundingBox().inflate(20.0);
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, roarBox)) {
             player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 60, 0, false, false, true));
-            player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 1, false, false, true));
+            // Slowness I (not II) so the roar disrupts without hard-locking groups in place.
+            player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 0, false, false, true));
 
-            // Small impulse away from boss
-            Vec3 dir = player.position().subtract(boss.position()).normalize().scale(0.8);
-            player.push(dir.x, 0.3, dir.z);
+            // Gentle impulse away from boss (reduced from 0.8 to avoid oppressive constant knockback)
+            Vec3 dir = player.position().subtract(boss.position()).normalize().scale(0.45);
+            player.push(dir.x, 0.2, dir.z);
             player.hurtMarked = true;
         }
     }

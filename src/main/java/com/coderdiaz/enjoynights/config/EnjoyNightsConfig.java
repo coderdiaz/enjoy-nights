@@ -73,6 +73,9 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.ConfigValue<String> bloodMoonBossName;
         public final ModConfigSpec.DoubleValue bloodMoonBossBaseHealth;
         public final ModConfigSpec.DoubleValue bloodMoonBossHealthPerPlayer;
+        public final ModConfigSpec.IntValue bloodMoonBossHealthDiminishAfterPlayers;
+        public final ModConfigSpec.DoubleValue bloodMoonBossHealthDiminishFactor;
+        public final ModConfigSpec.IntValue bloodMoonBossMaxMinionsPerPhase;
         public final ModConfigSpec.DoubleValue bloodMoonBossBaseDamage;
         public final ModConfigSpec.DoubleValue bloodMoonBossDamagePerPlayer;
         public final ModConfigSpec.DoubleValue bloodMoonBossSpeed;
@@ -91,6 +94,8 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.DoubleValue bloodMoonBossCleaveRadius;
         public final ModConfigSpec.BooleanValue bloodMoonBossLeapAttackEnabled;
         public final ModConfigSpec.IntValue bloodMoonBossLeapCooldownSeconds;
+        public final ModConfigSpec.DoubleValue bloodMoonBossLeapRadius;
+        public final ModConfigSpec.DoubleValue bloodMoonBossLeapKnockback;
         public final ModConfigSpec.IntValue bloodMoonBossShockwaveCooldownSeconds;
         public final ModConfigSpec.BooleanValue bloodMoonBossChargedAttackEnabled;
         public final ModConfigSpec.IntValue bloodMoonBossChargedAttackCooldownSeconds;
@@ -337,6 +342,18 @@ public class EnjoyNightsConfig {
                     .comment("Additional health added to the boss per extra nearby player in 1000 blocks (default: 100.0 = 50 hearts)")
                     .defineInRange("bloodMoonBossHealthPerPlayer", 100.0, 0.0, 2000.0);
 
+            bloodMoonBossHealthDiminishAfterPlayers = builder
+                    .comment("Number of extra players after which the per-player health bonus is reduced (diminishing returns). Extra players beyond this threshold add health scaled by bloodMoonBossHealthDiminishFactor, so large groups do not face an impossible health wall (default: 3)")
+                    .defineInRange("bloodMoonBossHealthDiminishAfterPlayers", 3, 1, 50);
+
+            bloodMoonBossHealthDiminishFactor = builder
+                    .comment("Multiplier applied to the per-player health bonus for players beyond bloodMoonBossHealthDiminishAfterPlayers (0.0 to 1.0, default: 0.6 = 60% of normal)")
+                    .defineInRange("bloodMoonBossHealthDiminishFactor", 0.6, 0.0, 1.0);
+
+            bloodMoonBossMaxMinionsPerPhase = builder
+                    .comment("Maximum reinforcement minions the boss summons per health phase (75%/50%/25%), capping group scaling to keep fights winnable (default: 4)")
+                    .defineInRange("bloodMoonBossMaxMinionsPerPhase", 4, 0, 12);
+
             bloodMoonBossBaseDamage = builder
                     .comment("Base total attack damage of the Blood Moon Boss (default: 14.0, balanced for Diamond/Netherite armor)")
                     .defineInRange("bloodMoonBossBaseDamage", 14.0, 1.0, 100.0);
@@ -408,6 +425,14 @@ public class EnjoyNightsConfig {
             bloodMoonBossLeapCooldownSeconds = builder
                     .comment("Cooldown in seconds between leap slam attacks (default: 14s)")
                     .defineInRange("bloodMoonBossLeapCooldownSeconds", 14, 5, 60);
+
+            bloodMoonBossLeapRadius = builder
+                    .comment("Radius in blocks of the shockwave generated when the boss lands its leap slam, pushing players away to force the group to disperse (default: 6.0)")
+                    .defineInRange("bloodMoonBossLeapRadius", 6.0, 3.0, 16.0);
+
+            bloodMoonBossLeapKnockback = builder
+                    .comment("Strength of the outward knockback applied to players by the leap slam landing shockwave (default: 1.6)")
+                    .defineInRange("bloodMoonBossLeapKnockback", 1.6, 0.5, 4.0);
 
             bloodMoonBossShockwaveCooldownSeconds = builder
                     .comment("Cooldown in seconds between ground fissure/shockwave attacks that knock players into the air (default: 18s)")

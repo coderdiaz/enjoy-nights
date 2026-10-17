@@ -26,6 +26,7 @@
   "block.enjoy_nights.crimson_altar": "Altar Carmesí",
   "item.enjoy_nights.crimson_altar": "Altar Carmesí",
   "enjoy_nights.altar.error.caves": "El ritual de sangre exige estar en la superficie bajo el cielo abierto de la noche. ¡No puede realizarse bajo tierra!",
+  "enjoy_nights.altar.error.overworld_only": "El Altar Carmesí solo puede colocarse en el Mundo Superior (Overworld).",
   "enjoy_nights.altar.error.not_blood_moon": "El Altar Carmesí permanece inerte. Solo despierta bajo la luz de la Luna de Sangre.",
   "enjoy_nights.altar.error.already_active": "¡El Heraldo Carmesí ya camina sobre estas tierras!",
   "enjoy_nights.altar.ritual_started": "¡El ritual de sangre ha comenzado! El Heraldo Carmesí está despertando...",
