@@ -111,6 +111,11 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue bloodMoonBossSkullVolleyCooldownSeconds;
         public final ModConfigSpec.BooleanValue bloodMoonBossSoulPillarsEnabled;
         public final ModConfigSpec.IntValue bloodMoonBossSoulPillarsCooldownSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonBossSpinCleaveEnabled;
+        public final ModConfigSpec.IntValue bloodMoonBossSpinCleaveCooldownSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonBossRoarRallyEnabled;
+        public final ModConfigSpec.BooleanValue bloodMoonBossGrabEnabled;
+        public final ModConfigSpec.IntValue bloodMoonBossGrabCooldownSeconds;
         public final ModConfigSpec.IntValue bloodMoonBossArenaRadius;
         public final ModConfigSpec.IntValue bloodMoonBossArenaSuppressRadius;
         public final ModConfigSpec.BooleanValue bloodMoonBossArenaSuppressSieges;
@@ -507,6 +512,26 @@ public class EnjoyNightsConfig {
             bloodMoonBossSoulPillarsCooldownSeconds = builder
                     .comment("Cooldown in seconds between Soul Fire Pillar casts (default: 16s)")
                     .defineInRange("bloodMoonBossSoulPillarsCooldownSeconds", 16, 5, 90);
+
+            bloodMoonBossSpinCleaveEnabled = builder
+                    .comment("Enable the Spin Cleave: a 360-degree sweeping strike that hits all surrounding players and pushes them outward, forcing the group to give the colossus space (default: true)")
+                    .define("bloodMoonBossSpinCleaveEnabled", true);
+
+            bloodMoonBossSpinCleaveCooldownSeconds = builder
+                    .comment("Cooldown in seconds between Spin Cleave attacks (default: 14s)")
+                    .defineInRange("bloodMoonBossSpinCleaveCooldownSeconds", 14, 4, 60);
+
+            bloodMoonBossRoarRallyEnabled = builder
+                    .comment("When the boss roars, also rally its nearby summoned minions: pull them toward the boss and grant them a short Speed and Strength buff (commander behaviour) (default: true)")
+                    .define("bloodMoonBossRoarRallyEnabled", true);
+
+            bloodMoonBossGrabEnabled = builder
+                    .comment("Enable the Grab Toss: if a player clings to the boss in melee for too long, it seizes them, pulls them in front and hurls them away with Slowness, punishing permanent face-tanking (default: true)")
+                    .define("bloodMoonBossGrabEnabled", true);
+
+            bloodMoonBossGrabCooldownSeconds = builder
+                    .comment("Cooldown in seconds between Grab Toss attacks (default: 13s)")
+                    .defineInRange("bloodMoonBossGrabCooldownSeconds", 13, 5, 60);
 
             bloodMoonBossArenaRadius = builder
                     .comment("Radius in blocks of the boss battle arena anchored at the Crimson Altar. The boss cannot leave this radius and retargets players inside it (default: 56)")

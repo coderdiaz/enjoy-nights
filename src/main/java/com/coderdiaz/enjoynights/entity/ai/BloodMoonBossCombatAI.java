@@ -41,7 +41,9 @@ public class BloodMoonBossCombatAI {
         CHARGED_LUNGE,
         STOMP,
         SKULL_VOLLEY,
-        SOUL_PILLARS
+        SOUL_PILLARS,
+        SPIN_CLEAVE,
+        GRAB
     }
 
     private final WitherSkeleton boss;
@@ -58,6 +60,11 @@ public class BloodMoonBossCombatAI {
     private int stompCooldown = 120;
     private int skullVolleyCooldown = 160;
     private int soulPillarsCooldown = 200;
+    private int spinCleaveCooldown = 120;
+    private int grabCooldown = 140;
+    // Ticks the current target has spent clinging in melee range; drives the Grab Toss.
+    private int targetHugTicks = 0;
+    private Player grabTarget = null;
     private int meleeSwingCooldown = 0;
     private int recoveryTicks = 0;
     private int meleeComboStep = 0;
@@ -289,6 +296,10 @@ public class BloodMoonBossCombatAI {
                     performSkullVolley(level);
                 } else if (activeWindup == WindupType.SOUL_PILLARS) {
                     performSoulPillars(level);
+                } else if (activeWindup == WindupType.SPIN_CLEAVE) {
+                    performSpinCleave(level);
+                } else if (activeWindup == WindupType.GRAB) {
+                    performGrabToss(level);
                 }
                 activeWindup = WindupType.NONE;
             }
@@ -303,6 +314,8 @@ public class BloodMoonBossCombatAI {
         if (stompCooldown > 0) stompCooldown--;
         if (skullVolleyCooldown > 0) skullVolleyCooldown--;
         if (soulPillarsCooldown > 0) soulPillarsCooldown--;
+        if (spinCleaveCooldown > 0) spinCleaveCooldown--;
+        if (grabCooldown > 0) grabCooldown--;
         if (meleeSwingCooldown > 0) meleeSwingCooldown--;
         if (globalAbilityCooldown > 0) globalAbilityCooldown--;
         if (targetCommitmentTicks > 0) targetCommitmentTicks--;
@@ -322,6 +335,24 @@ public class BloodMoonBossCombatAI {
         Player currentTarget = null;
         if (boss.getTarget() instanceof Player p && p.isAlive() && !p.isSpectator() && !p.isCreative()) {
             currentTarget = p;
+        }
+
+        // Track how long the current target clings in melee range, to drive the Grab Toss.
+        double meleeReach = EnjoyNightsConfig.SERVER.bloodMoonBossCleaveRadius.get();
+        if (currentTarget != null && boss.distanceTo(currentTarget) <= meleeReach + 0.5) {
+            targetHugTicks++;
+        } else {
+            targetHugTicks = 0;
+        }
+
+        // 7b. Ability: Grab Toss — punish a player who face-tanks the colossus for too long
+        // (~4s glued in melee). Seizes and hurls them, breaking the perma-hug strategy.
+        if (currentTarget != null
+                && EnjoyNightsConfig.SERVER.bloodMoonBossGrabEnabled.get()
+                && grabCooldown <= 0 && globalAbilityCooldown <= 0
+                && targetHugTicks >= 80) {
+            beginHeavyMove(level, WindupType.GRAB, currentTarget);
+            return;
         }
 
         // 8. Ability: Repulsion Wave (Anti-Gank if 3+ players crowd the boss)
@@ -372,6 +403,11 @@ public class BloodMoonBossCombatAI {
             if (EnjoyNightsConfig.SERVER.bloodMoonBossStompEnabled.get()
                     && stompCooldown <= 0 && dist <= 5.0) {
                 eligible.add(WindupType.STOMP);
+            }
+            // Spin Cleave: 360-degree close-range sweep that forces spacing.
+            if (EnjoyNightsConfig.SERVER.bloodMoonBossSpinCleaveEnabled.get()
+                    && spinCleaveCooldown <= 0 && dist <= 5.0) {
+                eligible.add(WindupType.SPIN_CLEAVE);
             }
             // Wither Skull volley: mid/long-range dodgeable ranged attack.
             if (EnjoyNightsConfig.SERVER.bloodMoonBossSkullVolleyEnabled.get()
@@ -448,6 +484,18 @@ public class BloodMoonBossCombatAI {
                     soulPillarTargets.add(inArena.get(i).position());
                 }
                 level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.HOSTILE, 1.4F, 0.6F);
+            }
+            case SPIN_CLEAVE -> {
+                activeWindup = WindupType.SPIN_CLEAVE;
+                windupTicks = 18; // 0.9s wind-up as it rears back for the spin
+                level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 1.4F, 0.5F);
+                level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.HOSTILE, 1.2F, 0.7F);
+            }
+            case GRAB -> {
+                activeWindup = WindupType.GRAB;
+                windupTicks = 14; // 0.7s lunge-and-seize telegraph
+                grabTarget = target;
+                level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WARDEN_ATTACK_IMPACT, SoundSource.HOSTILE, 1.3F, 0.8F);
             }
             default -> { /* NONE: nothing to begin */ }
         }
@@ -920,6 +968,79 @@ public class BloodMoonBossCombatAI {
         soulPillarTargets = null;
         soulPillarsCooldown = EnjoyNightsConfig.SERVER.bloodMoonBossSoulPillarsCooldownSeconds.get() * 20;
         recoveryTicks = Math.max(8, EnjoyNightsConfig.SERVER.bloodMoonBossRecoveryTicks.get() - 6);
+    }
+
+    /**
+     * Spin Cleave: a 360-degree sweeping strike around the colossus. Hits every player in
+     * reach (no cone) and shoves them outward, forcing a crowd to give it space rather than
+     * safely surrounding it. Moderate damage, horizontal-biased knockback.
+     */
+    private void performSpinCleave(ServerLevel level) {
+        boss.swing(InteractionHand.MAIN_HAND);
+        double reach = 5.0;
+        // Full-circle sweep particles at the colossus's midsection.
+        for (int a = 0; a < 20; a++) {
+            double ang = (Math.PI * 2 / 20) * a;
+            double rx = boss.getX() + Math.cos(ang) * reach * 0.8;
+            double rz = boss.getZ() + Math.sin(ang) * reach * 0.8;
+            level.sendParticles(ParticleTypes.SWEEP_ATTACK, rx, boss.getY() + 1.0, rz, 1, 0.0, 0.0, 0.0, 0.0);
+            level.sendParticles(ParticleTypes.CRIT, rx, boss.getY() + 0.5, rz, 1, 0.0, 0.0, 0.0, 0.05);
+        }
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 1.5F, 0.45F);
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.HOSTILE, 1.3F, 0.6F);
+
+        float dmg = (float) boss.getAttributeValue(Attributes.ATTACK_DAMAGE) * 0.90F;
+        AABB box = boss.getBoundingBox().inflate(reach);
+        for (Player p : level.getEntitiesOfClass(Player.class, box, pl -> !pl.isSpectator() && !pl.isCreative() && pl.isAlive())) {
+            if (p.distanceToSqr(boss) <= reach * reach) {
+                p.hurtServer(level, level.damageSources().mobAttack(boss), dmg);
+                Vec3 push = p.position().subtract(boss.position());
+                if (push.lengthSqr() < 0.01) {
+                    push = new Vec3(level.getRandom().nextDouble() - 0.5, 0, level.getRandom().nextDouble() - 0.5);
+                }
+                push = push.normalize().scale(1.2).add(0, 0.25, 0);
+                applyControlledKnockback(level, p, push);
+            }
+        }
+
+        spinCleaveCooldown = EnjoyNightsConfig.SERVER.bloodMoonBossSpinCleaveCooldownSeconds.get() * 20;
+        recoveryTicks = EnjoyNightsConfig.SERVER.bloodMoonBossRecoveryTicks.get();
+    }
+
+    /**
+     * Grab Toss: seizes the player who has been clinging in melee and hurls them. Teleports
+     * them just in front of the boss, then launches them up and away with a brief Slowness,
+     * breaking the perma-face-tank strategy. Resets the hug timer so it cannot chain.
+     */
+    private void performGrabToss(ServerLevel level) {
+        Player victim = (grabTarget != null && grabTarget.isAlive() && !grabTarget.isSpectator() && !grabTarget.isCreative())
+                ? grabTarget : null;
+        grabTarget = null;
+        targetHugTicks = 0;
+        if (victim == null) {
+            grabCooldown = EnjoyNightsConfig.SERVER.bloodMoonBossGrabCooldownSeconds.get() * 20;
+            return;
+        }
+
+        // Seize: pull the victim right in front of the boss.
+        Vec3 look = boss.getLookAngle();
+        Vec3 front = boss.position().add(look.x * 1.6, 0, look.z * 1.6);
+        victim.teleportTo(front.x, boss.getY(), front.z);
+        level.sendParticles(ParticleTypes.CRIT, victim.getX(), victim.getY() + 1.0, victim.getZ(), 20, 0.4, 0.6, 0.4, 0.2);
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WARDEN_ATTACK_IMPACT, SoundSource.HOSTILE, 1.5F, 0.7F);
+
+        float dmg = (float) boss.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.0F;
+        victim.hurtServer(level, level.damageSources().mobAttack(boss), dmg);
+        maybeApplyWither(victim);
+
+        // Toss: hurl the victim up and away from the boss.
+        Vec3 toss = look.scale(1.4).add(0, 0.7, 0);
+        applyControlledKnockback(level, victim, toss);
+        victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 0, false, true, true));
+        level.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.ENDER_DRAGON_FLAP, SoundSource.HOSTILE, 1.2F, 1.0F);
+
+        grabCooldown = EnjoyNightsConfig.SERVER.bloodMoonBossGrabCooldownSeconds.get() * 20;
+        recoveryTicks = EnjoyNightsConfig.SERVER.bloodMoonBossRecoveryTicks.get();
     }
 
     private void executeRepulsionWave(ServerLevel level, List<Player> nearby) {

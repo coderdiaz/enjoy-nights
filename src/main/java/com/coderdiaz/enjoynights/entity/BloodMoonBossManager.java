@@ -510,6 +510,20 @@ public class BloodMoonBossManager {
             player.push(dir.x, 0.2, dir.z);
             player.hurtMarked = true;
         }
+
+        // Commander rally: the roar also marshals the boss's own minions — pull nearby
+        // ones toward the boss and grant them a short Speed + Strength surge, so the roar
+        // reads as a command, not just a crowd-control pulse.
+        if (EnjoyNightsConfig.SERVER.bloodMoonBossRoarRallyEnabled.get()) {
+            AABB rallyBox = boss.getBoundingBox().inflate(28.0);
+            for (Mob minion : level.getEntitiesOfClass(Mob.class, rallyBox,
+                    m -> m.isAlive() && m.getTags().contains(TAG_BOSS_MINION))) {
+                minion.getNavigation().moveTo(boss.getX(), boss.getY(), boss.getZ(), 1.2);
+                minion.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 0, false, true, true));
+                minion.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 120, 0, false, true, true));
+                level.sendParticles(ParticleTypes.ANGRY_VILLAGER, minion.getX(), minion.getY() + minion.getBbHeight() + 0.3, minion.getZ(), 2, 0.2, 0.1, 0.2, 0.0);
+            }
+        }
     }
 
     private static void summonMinions(ServerLevel level, LivingEntity boss, int count) {
