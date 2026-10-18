@@ -99,14 +99,19 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * **Imposing Scale & Colossus Stride:** Towering at **1.7x scale** (`Attributes.SCALE`) with a 1.25 step height (`Attributes.STEP_HEIGHT`), navigating single-block elevations effortlessly.
 * **Smart Multi-Target Aggro:** Commits to targets in 5-second windows to avoid stuttering pathfinding bugs, while tracking player threat to aggressively retarget snipers and archers.
 * **Elden Ring-Style Moveset & Telegraphed Attacks:**
+  * **Colossus Presence:** At 1.7x scale the boss shakes the ground with a heavy footfall every few steps, and its strikes land as weighty overhead slams (ground burst + deep impact sounds) rather than thin sword sweeps.
   * **Conical Cleave Attack:** Sweeping netherite axe swings deal damage in a 140° frontal cone to all players in melee reach.
+  * **Colossus Stomp (`bloodMoonBossStompEnabled`):** A short-range ground slam at the boss's feet that damages and briefly applies Slowness to players hugging its legs, punishing melee that never backs off.
   * **Telegraphed Charged Lunge & Sweeping Dash:** Winds up with raised blade and dynamic target tracking, then charges forward delivering a 140° wide sweep with massive damage and knockback.
   * **Devastating Leap Slam (Anti-Kiting & Anti-Gank):** When targets stay between 8 and 24 blocks away, the boss performs a committed leap that arcs through the air and lands on a targeted player (tracking them mid-air, with a ground impact-zone telegraph), forcing the group to scatter. On landing it unleashes a dispersal shockwave (`bloodMoonBossLeapRadius`, `bloodMoonBossLeapKnockback`) that blasts surrounding players away and **disables shields for 5 seconds**.
+  * **Wither Skull Volley (`bloodMoonBossSkullVolleyEnabled`):** At mid/long range the boss launches a spread of homing wither skulls (3 in Phase 2) — a dodgeable, blockable ranged threat so distant players are not safe.
+  * **Soul Fire Pillars (`bloodMoonBossSoulPillarsEnabled`):** Marks up to three players' positions with a brief soul-fire telegraph, then erupts those zones for damage and ignite — move out of the marked ground or pay for it.
   * **Ground Fissure:** Slams the ground launching all nearby players into the air with vertical knockup.
   * **Repulsion Wave (Anti-Gank):** If 3 or more players crowd the boss within 3.5 blocks, emits a concussive shockwave blasting everyone back.
-  * **Punish Windows (Recovery Frames):** After unleashing heavy moves (Leap, Shockwave, or Charged Lunge), the boss pauses for ~1.75s (`bloodMoonBossRecoveryTicks = 35`), giving observant players a window to punish and counterattack.
-  * **Phase 2 - Furia del Eclipse (< 40% HP):** Emits soul-fire trails, gains Speed & Strength, attacks ignite targets, and ability cooldowns are halved.
-  * **Midnight Roar:** Emits an echoing roar inflicting Darkness and Slowness on nearby players (`bloodMoonBossRoarCooldownSeconds = 30`).
+  * **Wither on Hit (`bloodMoonBossWitherOnHitChance`):** Melee strikes have a configurable chance (25% by default) to inflict Wither, instead of the old guaranteed application.
+  * **Punish Windows (Recovery Frames):** After unleashing heavy moves, the boss pauses (`bloodMoonBossRecoveryTicks = 35`), giving observant players a window to punish and counterattack. Heavy moves share a lockout (`bloodMoonBossAbilityLockoutTicks`) so they never chain back-to-back.
+  * **Phase 2 - Furia del Eclipse (< 40% HP):** Emits soul-fire trails, gains Speed, attacks ignite targets, and individual ability cooldowns are halved (the shared lockout still applies).
+  * **Midnight Roar:** Emits an echoing roar inflicting Darkness and Slowness on nearby players (`bloodMoonBossRoarCooldownSeconds = 30`), deferred so it never overlaps another attack.
   * **Reinforcement Waves:** Summons reinforcements at 75%, 50%, and 25% health. The common core is fiery skeletons and armored zombies, with rarer illager specialists mixed in — a **10% chance for a Vindicator** and a **5% chance for an Evoker** per summoned minion.
 * **Glorious Victory:** Vanquishing the boss broadcasts a global victory message, unfreezes the passage of time toward dawn, and awards 500 XP, Diamonds, Emeralds, Amethyst Shards, and a Totem of Undying.
 * **100% Server Configurable:** All boss stats, scaling radius, ritual requirements, freeze durations, moveset cooldowns, and mechanics can be fine-tuned in `enjoy_nights-server.toml`.
@@ -235,15 +240,15 @@ All mechanics are 100% customizable:
         bloodMoonBossName = "Heraldo de la Luna de Sangre"
         # Base maximum health for 1 player (default: 200.0 = 100 hearts)
         bloodMoonBossBaseHealth = 200.0
-        # Extra health added per nearby player in 1000 blocks (default: 100.0 = 50 hearts)
-        bloodMoonBossHealthPerPlayer = 100.0
-        # Diminishing returns on group health scaling (large groups don't face an impossible wall)
-        bloodMoonBossHealthDiminishAfterPlayers = 3
+        # Extra health added per nearby player in 1000 blocks (default: 60.0 = 30 hearts)
+        bloodMoonBossHealthPerPlayer = 60.0
+        # Diminishing returns on group health scaling (extra players past this add reduced health)
+        bloodMoonBossHealthDiminishAfterPlayers = 1
         bloodMoonBossHealthDiminishFactor = 0.6
         # Cap on reinforcement minions summoned per health phase (75%/50%/25%)
         bloodMoonBossMaxMinionsPerPhase = 4
-        # Base total attack damage (default: 14.0, balanced for Diamond/Netherite)
-        bloodMoonBossBaseDamage = 14.0
+        # Base total attack damage (default: 11.0, fair against unenchanted Diamond/Netherite)
+        bloodMoonBossBaseDamage = 11.0
         # Extra attack damage per nearby player (default: 0.0, damage does not scale per player)
         bloodMoonBossDamagePerPlayer = 0.0
         # Movement speed attribute (default: 0.20, colossus pace)
@@ -291,6 +296,23 @@ All mechanics are 100% customizable:
         bloodMoonBossRecoveryTicks = 35
         # Enable Phase 2 "Furia del Eclipse" below 40% health
         bloodMoonBossPhase2Enabled = true
+        # Global multiplier for the knockback the boss inflicts with heavy moves (lower = players stay more grounded)
+        bloodMoonBossKnockbackMultiplier = 1.0
+        # Probability (0.0-1.0) the boss throws an ordinary melee strike instead of a heavy move when a player is in reach
+        bloodMoonBossMeleeBias = 0.5
+        # Shared lockout in ticks between heavy moves, applied in both phases so they never chain (65 = ~3.25s)
+        bloodMoonBossAbilityLockoutTicks = 65
+        # Probability (0.0-1.0) that a melee hit inflicts Wither (0 disables)
+        bloodMoonBossWitherOnHitChance = 0.25
+        # Colossus Stomp: short-range ground slam that damages and briefly slows nearby players
+        bloodMoonBossStompEnabled = true
+        bloodMoonBossStompCooldownSeconds = 10
+        # Wither Skull volley: dodgeable ranged attack of homing wither skulls at mid/long range
+        bloodMoonBossSkullVolleyEnabled = true
+        bloodMoonBossSkullVolleyCooldownSeconds = 11
+        # Soul Fire Pillars: telegraphed danger zones that erupt under players' marked positions
+        bloodMoonBossSoulPillarsEnabled = true
+        bloodMoonBossSoulPillarsCooldownSeconds = 16
         # Radius in blocks of the altar-anchored battle arena (boss confinement + retargeting)
         bloodMoonBossArenaRadius = 56
         # Radius in blocks around the altar where siege spawns are suppressed while the boss is active (usually wider than the arena; boss minions still spawn)
