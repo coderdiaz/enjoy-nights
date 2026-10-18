@@ -207,9 +207,11 @@ public class BloodMoonBossManager {
                     }
                 }
 
-                // Combat Ability 1: Roar & Darkness Pulse
+                // Combat Ability 1: Roar & Darkness Pulse. Deferred while the combat AI is
+                // mid-move (windup/recovery/leap) so the roar never overlaps an attack and
+                // stacks crowd-control. The cooldown is only reset once it actually fires.
                 roarCooldownTicks--;
-                if (roarCooldownTicks <= 0) {
+                if (roarCooldownTicks <= 0 && (combatAI == null || !combatAI.isBusy())) {
                     executeRoar(level, boss);
                     roarCooldownTicks = EnjoyNightsConfig.SERVER.bloodMoonBossRoarCooldownSeconds.get() * 20;
                 }
@@ -219,7 +221,7 @@ public class BloodMoonBossManager {
                     float hpRatio = boss.getHealth() / boss.getMaxHealth();
                     double scaleRadius = EnjoyNightsConfig.SERVER.bloodMoonBossScalingRadius.get();
                     AABB scanArea = new AABB(boss.blockPosition()).inflate(scaleRadius);
-                    int nearbyCount = level.getEntitiesOfClass(ServerPlayer.class, scanArea, p -> !p.isSpectator()).size();
+                    int nearbyCount = level.getEntitiesOfClass(ServerPlayer.class, scanArea, p -> !p.isSpectator() && !p.isCreative()).size();
                     int groupBonus = Math.max(0, nearbyCount - 1);
                     int maxPerPhase = EnjoyNightsConfig.SERVER.bloodMoonBossMaxMinionsPerPhase.get();
 
@@ -274,7 +276,7 @@ public class BloodMoonBossManager {
      */
     private static void spawnBoss(ServerLevel level) {
         List<ServerPlayer> players = level.players().stream()
-                .filter(p -> !p.isSpectator() && p.isAlive())
+                .filter(p -> !p.isSpectator() && !p.isCreative() && p.isAlive())
                 .toList();
 
         if (players.isEmpty()) {
@@ -300,7 +302,7 @@ public class BloodMoonBossManager {
     private static void instantiateBoss(ServerLevel level, BlockPos spawnPos, double scalingRadius, @Nullable Player summoner, boolean isRitual) {
         AABB countBox = new AABB(spawnPos).inflate(scalingRadius);
         List<ServerPlayer> nearbyPlayers = level.players().stream()
-                .filter(p -> !p.isSpectator() && p.isAlive() && countBox.contains(p.position()))
+                .filter(p -> !p.isSpectator() && !p.isCreative() && p.isAlive() && countBox.contains(p.position()))
                 .toList();
         long playerCount = Math.max(1, nearbyPlayers.size());
         long extraPlayers = playerCount - 1;

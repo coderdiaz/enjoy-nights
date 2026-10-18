@@ -101,6 +101,16 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue bloodMoonBossChargedAttackCooldownSeconds;
         public final ModConfigSpec.IntValue bloodMoonBossRecoveryTicks;
         public final ModConfigSpec.BooleanValue bloodMoonBossPhase2Enabled;
+        public final ModConfigSpec.DoubleValue bloodMoonBossKnockbackMultiplier;
+        public final ModConfigSpec.DoubleValue bloodMoonBossMeleeBias;
+        public final ModConfigSpec.IntValue bloodMoonBossAbilityLockoutTicks;
+        public final ModConfigSpec.DoubleValue bloodMoonBossWitherOnHitChance;
+        public final ModConfigSpec.BooleanValue bloodMoonBossStompEnabled;
+        public final ModConfigSpec.IntValue bloodMoonBossStompCooldownSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonBossSkullVolleyEnabled;
+        public final ModConfigSpec.IntValue bloodMoonBossSkullVolleyCooldownSeconds;
+        public final ModConfigSpec.BooleanValue bloodMoonBossSoulPillarsEnabled;
+        public final ModConfigSpec.IntValue bloodMoonBossSoulPillarsCooldownSeconds;
         public final ModConfigSpec.IntValue bloodMoonBossArenaRadius;
         public final ModConfigSpec.IntValue bloodMoonBossArenaSuppressRadius;
         public final ModConfigSpec.BooleanValue bloodMoonBossArenaSuppressSieges;
@@ -343,12 +353,12 @@ public class EnjoyNightsConfig {
                     .defineInRange("bloodMoonBossBaseHealth", 200.0, 20.0, 5000.0);
 
             bloodMoonBossHealthPerPlayer = builder
-                    .comment("Additional health added to the boss per extra nearby player in 1000 blocks (default: 100.0 = 50 hearts)")
-                    .defineInRange("bloodMoonBossHealthPerPlayer", 100.0, 0.0, 2000.0);
+                    .comment("Additional health added to the boss per extra nearby player in 1000 blocks (default: 60.0 = 30 hearts)")
+                    .defineInRange("bloodMoonBossHealthPerPlayer", 60.0, 0.0, 2000.0);
 
             bloodMoonBossHealthDiminishAfterPlayers = builder
-                    .comment("Number of extra players after which the per-player health bonus is reduced (diminishing returns). Extra players beyond this threshold add health scaled by bloodMoonBossHealthDiminishFactor, so large groups do not face an impossible health wall (default: 3)")
-                    .defineInRange("bloodMoonBossHealthDiminishAfterPlayers", 3, 1, 50);
+                    .comment("Number of extra players after which the per-player health bonus is reduced (diminishing returns). Extra players beyond this threshold add health scaled by bloodMoonBossHealthDiminishFactor, so groups do not face an impossible health wall (default: 1)")
+                    .defineInRange("bloodMoonBossHealthDiminishAfterPlayers", 1, 1, 50);
 
             bloodMoonBossHealthDiminishFactor = builder
                     .comment("Multiplier applied to the per-player health bonus for players beyond bloodMoonBossHealthDiminishAfterPlayers (0.0 to 1.0, default: 0.6 = 60% of normal)")
@@ -359,8 +369,8 @@ public class EnjoyNightsConfig {
                     .defineInRange("bloodMoonBossMaxMinionsPerPhase", 4, 0, 12);
 
             bloodMoonBossBaseDamage = builder
-                    .comment("Base total attack damage of the Blood Moon Boss (default: 14.0, balanced for Diamond/Netherite armor)")
-                    .defineInRange("bloodMoonBossBaseDamage", 14.0, 1.0, 100.0);
+                    .comment("Base total attack damage of the Blood Moon Boss (default: 11.0, balanced to stay threatening against unenchanted Diamond/Netherite without being punishing)")
+                    .defineInRange("bloodMoonBossBaseDamage", 11.0, 1.0, 100.0);
 
             bloodMoonBossDamagePerPlayer = builder
                     .comment("Additional attack damage per extra nearby player (default: 0.0, boss damage remains fair regardless of player count)")
@@ -457,6 +467,46 @@ public class EnjoyNightsConfig {
             bloodMoonBossPhase2Enabled = builder
                     .comment("Whether the boss enters Phase 2 'Furia del Eclipse' when below 40% health (default: true)")
                     .define("bloodMoonBossPhase2Enabled", true);
+
+            bloodMoonBossKnockbackMultiplier = builder
+                    .comment("Global multiplier applied to the knockback the boss inflicts on players with its heavy moves (leap, shockwave, charged lunge, repulsion). Lower it to keep players more grounded; 1.0 = default strength (default: 1.0)")
+                    .defineInRange("bloodMoonBossKnockbackMultiplier", 1.0, 0.0, 2.0);
+
+            bloodMoonBossMeleeBias = builder
+                    .comment("Probability (0.0 to 1.0) that the boss throws an ordinary melee strike instead of a heavy move when a player is within melee reach. Higher values favor readable basic attacks over constant lunges (default: 0.5)")
+                    .defineInRange("bloodMoonBossMeleeBias", 0.5, 0.0, 1.0);
+
+            bloodMoonBossAbilityLockoutTicks = builder
+                    .comment("Shared lockout in ticks between the boss's heavy moves (leap/shockwave/charged lunge), applied in both phases so heavy moves never chain back-to-back (default: 65 ticks = ~3.25s; 20 ticks = 1s)")
+                    .defineInRange("bloodMoonBossAbilityLockoutTicks", 65, 20, 200);
+
+            bloodMoonBossWitherOnHitChance = builder
+                    .comment("Probability (0.0 to 1.0) that a melee hit from the boss inflicts Wither on the target. 0 disables it (default: 0.25 = 25%)")
+                    .defineInRange("bloodMoonBossWitherOnHitChance", 0.25, 0.0, 1.0);
+
+            bloodMoonBossStompEnabled = builder
+                    .comment("Enable the colossus Stomp: a short-range ground slam that damages and briefly slows players near the boss's feet, conveying its weight (default: true)")
+                    .define("bloodMoonBossStompEnabled", true);
+
+            bloodMoonBossStompCooldownSeconds = builder
+                    .comment("Cooldown in seconds between Stomp attacks (default: 10s)")
+                    .defineInRange("bloodMoonBossStompCooldownSeconds", 10, 3, 60);
+
+            bloodMoonBossSkullVolleyEnabled = builder
+                    .comment("Enable the Wither Skull volley: a dodgeable ranged attack where the boss launches homing wither skulls at mid/long range (default: true)")
+                    .define("bloodMoonBossSkullVolleyEnabled", true);
+
+            bloodMoonBossSkullVolleyCooldownSeconds = builder
+                    .comment("Cooldown in seconds between Wither Skull volleys (default: 11s)")
+                    .defineInRange("bloodMoonBossSkullVolleyCooldownSeconds", 11, 4, 60);
+
+            bloodMoonBossSoulPillarsEnabled = builder
+                    .comment("Enable Soul Fire Pillars: telegraphed danger zones that erupt under players' positions after a brief warning, forcing repositioning (default: true)")
+                    .define("bloodMoonBossSoulPillarsEnabled", true);
+
+            bloodMoonBossSoulPillarsCooldownSeconds = builder
+                    .comment("Cooldown in seconds between Soul Fire Pillar casts (default: 16s)")
+                    .defineInRange("bloodMoonBossSoulPillarsCooldownSeconds", 16, 5, 90);
 
             bloodMoonBossArenaRadius = builder
                     .comment("Radius in blocks of the boss battle arena anchored at the Crimson Altar. The boss cannot leave this radius and retargets players inside it (default: 56)")

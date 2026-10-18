@@ -197,7 +197,7 @@ public class BloodMoonEvents {
         if (isBloodMoon && EnjoyNightsConfig.SERVER.bloodMoonDarknessPulseEnabled.get()) {
             if (level.getGameTime() % 20 == 0) {
                 for (ServerPlayer player : level.players()) {
-                    if (player.isSpectator() || !player.isAlive()) {
+                    if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
                         continue;
                     }
 
@@ -270,7 +270,7 @@ public class BloodMoonEvents {
         int maxMobs = Math.max(minMobs, EnjoyNightsConfig.SERVER.bloodMoonSiegeWaveMaxMobs.get());
 
         for (ServerPlayer player : level.players()) {
-            if (player.isSpectator() || !player.isAlive()) {
+            if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
                 continue;
             }
 
