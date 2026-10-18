@@ -56,68 +56,13 @@ public class LunarPhaseEvents {
         boolean isBloodMoon = NightAndMoonHelper.isBloodMoon(level);
 
         if (isFullMoon || isBloodMoon) {
+            // Apply the core lunar empowerment (charged creepers, potion buffs, follow
+            // range, flame skeletons). Extracted so manually-spawned siege mobs — which
+            // bypass the vanilla spawn path and therefore this event — can be empowered
+            // identically by calling applyLunarEmpowerment directly.
+            applyLunarEmpowerment(monster, isFullMoon, isBloodMoon);
+
             RandomSource random = monster.getRandom();
-            // Higher chance to spawn with buffs (75% on Blood Moon, 50% on Full Moon)
-            float buffChance = isBloodMoon ? 0.75f : 0.50f;
-
-            if (monster instanceof net.minecraft.world.entity.monster.Creeper creeper) {
-                // Do NOT give potion effects to creepers to avoid lingering AreaEffectCloud exploit on explosion
-                double chargedChance = isBloodMoon ?
-                        EnjoyNightsConfig.SERVER.bloodMoonChargedCreeperChance.get() :
-                        EnjoyNightsConfig.SERVER.fullMoonChargedCreeperChance.get();
-
-                if (random.nextFloat() < chargedChance) {
-                    com.coderdiaz.enjoynights.util.CreeperHelper.setPowered(creeper, true);
-                }
-
-                // Agility speed increase through a removable modifier (no potion clouds),
-                // so it can be cleanly reverted when the event ends.
-                AttributeInstance speedAttr = creeper.getAttribute(Attributes.MOVEMENT_SPEED);
-                if (speedAttr != null && speedAttr.getModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.MODIFIER_CREEPER_SPEED) == null) {
-                    speedAttr.addPermanentModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.creeperSpeedModifier());
-                }
-
-                creeper.addTag(TAG_POWERED_MOB);
-            } else if (random.nextFloat() < buffChance) {
-                // Add Strength
-                monster.addEffect(new MobEffectInstance(MobEffects.STRENGTH, -1, isBloodMoon ? 1 : 0, false, true, true));
-
-                // 50% chance for Speed
-                if (random.nextFloat() < 0.50f) {
-                    monster.addEffect(new MobEffectInstance(MobEffects.SPEED, -1, 0, false, true, true));
-                }
-
-                // If Blood Moon, also grant Resistance
-                if (isBloodMoon) {
-                    monster.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, -1, 0, false, true, true));
-                }
-
-                // Increase follow range via a removable modifier so mobs are more
-                // aggressive during the event but revert cleanly when it ends.
-                AttributeInstance followRange = monster.getAttribute(Attributes.FOLLOW_RANGE);
-                if (followRange != null && followRange.getModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.MODIFIER_FOLLOW_RANGE) == null) {
-                    followRange.addPermanentModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.followRangeModifier());
-                }
-
-                monster.addTag(TAG_POWERED_MOB);
-            }
-
-            // Flame Skeletons in Blood Moon (15% chance to shoot flaming arrows)
-            if (isBloodMoon && monster instanceof net.minecraft.world.entity.monster.skeleton.AbstractSkeleton skeleton) {
-                double flameChance = EnjoyNightsConfig.SERVER.bloodMoonFlameSkeletonChance.get();
-                if (random.nextFloat() < flameChance) {
-                    skeleton.addTag(TAG_FIRE_SKELETON);
-                    skeleton.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CHAINMAIL_HELMET));
-                    skeleton.setDropChance(net.minecraft.world.entity.EquipmentSlot.HEAD, 0.0F);
-                    net.minecraft.world.item.ItemStack bow = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW);
-                    net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> flameHolder =
-                            level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
-                                    .getOrThrow(net.minecraft.world.item.enchantment.Enchantments.FLAME);
-                    bow.enchant(flameHolder, 1);
-                    skeleton.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, bow);
-                    skeleton.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 0.0F);
-                }
-            }
 
             // Controlled extra natural mob spawn during Blood Moon
             if (isBloodMoon && EnjoyNightsConfig.SERVER.bloodMoonExtraSpawnsEnabled.get()) {
@@ -147,6 +92,9 @@ public class LunarPhaseEvents {
                                         companion.addTag(TAG_CAVE_SPIDER);
                                     }
                                     companion.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(companionPos), EntitySpawnReason.NATURAL, null);
+                                    if (companion instanceof Monster companionMonster) {
+                                        applyLunarEmpowerment(companionMonster, isFullMoon, isBloodMoon);
+                                    }
                                     serverLevel.addFreshEntity(companion);
                                 }
                             }
@@ -179,6 +127,87 @@ public class LunarPhaseEvents {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Applies lunar-event empowerment to a single monster: charged creepers + agility for
+     * creepers, or Strength/Speed/(Resistance on Blood Moon) potion buffs plus a follow-range
+     * modifier for everyone else, and the Flame Skeleton upgrade on Blood Moon. Powered mobs
+     * are tagged so the lifecycle cleanup can revert them when the event ends.
+     *
+     * <p>Public and side-effect-contained so it can be invoked both from the
+     * {@link FinalizeSpawnEvent} path (natural spawns) and directly for manually-spawned
+     * siege mobs that never fire that event. Safe to call more than once (modifiers and the
+     * charged state are guarded), but it rolls fresh chances each call, so call it once per mob.
+     */
+    public static void applyLunarEmpowerment(Monster monster, boolean isFullMoon, boolean isBloodMoon) {
+        if (!(isFullMoon || isBloodMoon)) {
+            return;
+        }
+
+        RandomSource random = monster.getRandom();
+        // Higher chance to spawn with buffs (75% on Blood Moon, 50% on Full Moon)
+        float buffChance = isBloodMoon ? 0.75f : 0.50f;
+
+        if (monster instanceof net.minecraft.world.entity.monster.Creeper creeper) {
+            // Do NOT give potion effects to creepers to avoid lingering AreaEffectCloud exploit on explosion
+            double chargedChance = isBloodMoon ?
+                    EnjoyNightsConfig.SERVER.bloodMoonChargedCreeperChance.get() :
+                    EnjoyNightsConfig.SERVER.fullMoonChargedCreeperChance.get();
+
+            if (random.nextFloat() < chargedChance) {
+                com.coderdiaz.enjoynights.util.CreeperHelper.setPowered(creeper, true);
+            }
+
+            // Agility speed increase through a removable modifier (no potion clouds),
+            // so it can be cleanly reverted when the event ends.
+            AttributeInstance speedAttr = creeper.getAttribute(Attributes.MOVEMENT_SPEED);
+            if (speedAttr != null && speedAttr.getModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.MODIFIER_CREEPER_SPEED) == null) {
+                speedAttr.addPermanentModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.creeperSpeedModifier());
+            }
+
+            creeper.addTag(TAG_POWERED_MOB);
+        } else if (random.nextFloat() < buffChance) {
+            // Add Strength
+            monster.addEffect(new MobEffectInstance(MobEffects.STRENGTH, -1, isBloodMoon ? 1 : 0, false, true, true));
+
+            // 50% chance for Speed
+            if (random.nextFloat() < 0.50f) {
+                monster.addEffect(new MobEffectInstance(MobEffects.SPEED, -1, 0, false, true, true));
+            }
+
+            // If Blood Moon, also grant Resistance
+            if (isBloodMoon) {
+                monster.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, -1, 0, false, true, true));
+            }
+
+            // Increase follow range via a removable modifier so mobs are more
+            // aggressive during the event but revert cleanly when it ends.
+            AttributeInstance followRange = monster.getAttribute(Attributes.FOLLOW_RANGE);
+            if (followRange != null && followRange.getModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.MODIFIER_FOLLOW_RANGE) == null) {
+                followRange.addPermanentModifier(com.coderdiaz.enjoynights.util.EventMobCleanup.followRangeModifier());
+            }
+
+            monster.addTag(TAG_POWERED_MOB);
+        }
+
+        // Flame Skeletons in Blood Moon (chance to shoot flaming arrows)
+        if (isBloodMoon && monster instanceof net.minecraft.world.entity.monster.skeleton.AbstractSkeleton skeleton
+                && !skeleton.getTags().contains(TAG_FIRE_SKELETON)) {
+            double flameChance = EnjoyNightsConfig.SERVER.bloodMoonFlameSkeletonChance.get();
+            if (random.nextFloat() < flameChance) {
+                skeleton.addTag(TAG_FIRE_SKELETON);
+                skeleton.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CHAINMAIL_HELMET));
+                skeleton.setDropChance(net.minecraft.world.entity.EquipmentSlot.HEAD, 0.0F);
+                net.minecraft.world.item.ItemStack bow = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW);
+                net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> flameHolder =
+                        skeleton.level().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                                .getOrThrow(net.minecraft.world.item.enchantment.Enchantments.FLAME);
+                bow.enchant(flameHolder, 1);
+                skeleton.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, bow);
+                skeleton.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 0.0F);
             }
         }
     }

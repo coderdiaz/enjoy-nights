@@ -28,6 +28,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
@@ -52,8 +53,11 @@ import java.util.UUID;
 
 public class BloodMoonBossManager {
     public static final String TAG_BOSS = "enjoy_nights:blood_moon_boss";
+    /** Tag marking a reinforcement summoned by the boss, distinct from regular siege mobs. */
+    public static final String TAG_BOSS_MINION = "enjoy_nights:blood_moon_boss_minion";
 
     private static UUID activeBossUuid = null;
+    private static BlockPos arenaAnchorPos = null;
     private static ServerBossEvent bossBar = null;
     private static int roarCooldownTicks = 0;
     private static int freezeTimeRemainingTicks = 0;
@@ -63,6 +67,27 @@ public class BloodMoonBossManager {
 
     public static boolean isBossActive() {
         return activeBossUuid != null;
+    }
+
+    /** The altar position anchoring the current boss arena, or null if no boss is active. */
+    @Nullable
+    public static BlockPos getArenaAnchor() {
+        return arenaAnchorPos;
+    }
+
+    /** Configured radius in blocks of the boss battle arena (confinement + targeting). */
+    public static int getArenaRadius() {
+        return EnjoyNightsConfig.SERVER.bloodMoonBossArenaRadius.get();
+    }
+
+    /** Configured radius in blocks around the altar where siege spawns are suppressed. */
+    public static int getSuppressRadius() {
+        return EnjoyNightsConfig.SERVER.bloodMoonBossArenaSuppressRadius.get();
+    }
+
+    /** True when a boss is active and its arena anchor is known. */
+    public static boolean isArenaActive() {
+        return activeBossUuid != null && arenaAnchorPos != null;
     }
 
     public static void recordPlayerDamage(UUID playerUuid, float damage) {
@@ -91,10 +116,12 @@ public class BloodMoonBossManager {
                     } else {
                         cleanupBossBar();
                         activeBossUuid = null;
+                        clearArenaAnchor(level, false);
                     }
                 } else {
                     cleanupBossBar();
                     activeBossUuid = null;
+                    clearArenaAnchor(level, false);
                 }
             }
 
@@ -140,6 +167,7 @@ public class BloodMoonBossManager {
                     } else {
                         cleanupBossBar();
                         activeBossUuid = null;
+                        clearArenaAnchor(level, false);
                     }
                     return;
                 }
@@ -218,6 +246,7 @@ public class BloodMoonBossManager {
                 activeBossUuid = null;
                 freezeTimeRemainingTicks = 0;
                 bossDefeatedThisNight = true;
+                clearArenaAnchor(level, true);
             }
         }
     }
@@ -365,6 +394,9 @@ public class BloodMoonBossManager {
 
         level.addFreshEntity(boss);
         activeBossUuid = boss.getUUID();
+        // The arena is anchored at the summon position (the Crimson Altar for a ritual
+        // summon, or the chosen spawn for the legacy midnight spawn).
+        arenaAnchorPos = spawnPos;
         combatAI = new com.coderdiaz.enjoynights.entity.ai.BloodMoonBossCombatAI(boss);
         summonedPhases.clear();
         roarCooldownTicks = EnjoyNightsConfig.SERVER.bloodMoonBossRoarCooldownSeconds.get() * 20;
@@ -426,6 +458,7 @@ public class BloodMoonBossManager {
         cleanupBossBar();
         activeBossUuid = null;
         freezeTimeRemainingTicks = 0;
+        clearArenaAnchor(level, false);
     }
 
     public static void despawnBossOnDawn(ServerLevel level, WitherSkeleton boss) {
@@ -452,16 +485,13 @@ public class BloodMoonBossManager {
         // Remove boss and clean state without drops
         boss.discard();
 
-        // Clear summoned minions around the arena
-        for (Monster minion : level.getEntitiesOfClass(Monster.class, impactBox,
-                m -> m.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN) || m.getTags().contains(TAG_BOSS))) {
-            minion.discard();
-        }
+        // Minion cleanup is handled centrally by clearArenaAnchor (called below).
 
         cleanupBossBar();
         activeBossUuid = null;
         freezeTimeRemainingTicks = 0;
         bossDefeatedThisNight = true;
+        clearArenaAnchor(level, false);
     }
 
     private static void executeRoar(ServerLevel level, LivingEntity boss) {
@@ -490,40 +520,82 @@ public class BloodMoonBossManager {
             int mz = Mth.floor(boss.getZ() + Math.sin(angle) * dist);
             int my = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, mx, mz);
 
-            if (level.getRandom().nextBoolean()) {
-                // Summon Fiery Skeleton
-                Skeleton skeleton = EntityType.SKELETON.create(level, EntitySpawnReason.REINFORCEMENT);
-                if (skeleton != null) {
-                    skeleton.setPos(mx + 0.5, (double) my, mz + 0.5);
-                    skeleton.addTag(LunarPhaseEvents.TAG_POWERED_MOB);
-                    skeleton.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
-                    skeleton.addTag(LunarPhaseEvents.TAG_FIRE_SKELETON);
-                    skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.CHAINMAIL_HELMET));
-
-                    ItemStack bow = new ItemStack(Items.BOW);
-                    Holder<Enchantment> flameHolder = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.FLAME);
-                    bow.enchant(flameHolder, 1);
-                    skeleton.setItemSlot(EquipmentSlot.MAINHAND, bow);
-                    skeleton.setDropChance(EquipmentSlot.HEAD, 0.0F);
-                    skeleton.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-
-                    level.addFreshEntity(skeleton);
-                }
+            // Reinforcement composition: rare illager specialists plus the common core.
+            // 5% Evoker, 10% Vindicator, and the remaining 85% split evenly between the
+            // Fiery Skeleton and Armored Zombie (so those two stay the most common).
+            float roll = level.getRandom().nextFloat();
+            if (roll < 0.05F) {
+                summonEvoker(level, mx, my, mz);
+            } else if (roll < 0.15F) {
+                summonVindicator(level, mx, my, mz);
+            } else if (level.getRandom().nextBoolean()) {
+                summonFierySkeleton(level, mx, my, mz);
             } else {
-                // Summon Armored Zombie
-                Zombie zombie = EntityType.ZOMBIE.create(level, EntitySpawnReason.REINFORCEMENT);
-                if (zombie != null) {
-                    zombie.setPos(mx + 0.5, (double) my, mz + 0.5);
-                    zombie.addTag(LunarPhaseEvents.TAG_POWERED_MOB);
-                    zombie.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
-                    zombie.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
-                    zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
-                    zombie.setDropChance(EquipmentSlot.HEAD, 0.0F);
-                    zombie.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-                    level.addFreshEntity(zombie);
-                }
+                summonArmoredZombie(level, mx, my, mz);
             }
         }
+    }
+
+    private static void summonFierySkeleton(ServerLevel level, int mx, int my, int mz) {
+        Skeleton skeleton = EntityType.SKELETON.create(level, EntitySpawnReason.REINFORCEMENT);
+        if (skeleton == null) {
+            return;
+        }
+        skeleton.setPos(mx + 0.5, (double) my, mz + 0.5);
+        skeleton.addTag(LunarPhaseEvents.TAG_POWERED_MOB);
+        skeleton.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+        skeleton.addTag(TAG_BOSS_MINION);
+        skeleton.addTag(LunarPhaseEvents.TAG_FIRE_SKELETON);
+        skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.CHAINMAIL_HELMET));
+
+        ItemStack bow = new ItemStack(Items.BOW);
+        Holder<Enchantment> flameHolder = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.FLAME);
+        bow.enchant(flameHolder, 1);
+        skeleton.setItemSlot(EquipmentSlot.MAINHAND, bow);
+        skeleton.setDropChance(EquipmentSlot.HEAD, 0.0F);
+        skeleton.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+
+        level.addFreshEntity(skeleton);
+    }
+
+    private static void summonArmoredZombie(ServerLevel level, int mx, int my, int mz) {
+        Zombie zombie = EntityType.ZOMBIE.create(level, EntitySpawnReason.REINFORCEMENT);
+        if (zombie == null) {
+            return;
+        }
+        zombie.setPos(mx + 0.5, (double) my, mz + 0.5);
+        zombie.addTag(LunarPhaseEvents.TAG_POWERED_MOB);
+        zombie.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+        zombie.addTag(TAG_BOSS_MINION);
+        zombie.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+        zombie.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        zombie.setDropChance(EquipmentSlot.HEAD, 0.0F);
+        zombie.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        level.addFreshEntity(zombie);
+    }
+
+    private static void summonVindicator(ServerLevel level, int mx, int my, int mz) {
+        Mob vindicator = EntityType.VINDICATOR.create(level, EntitySpawnReason.REINFORCEMENT);
+        if (vindicator == null) {
+            return;
+        }
+        vindicator.setPos(mx + 0.5, (double) my, mz + 0.5);
+        vindicator.addTag(LunarPhaseEvents.TAG_POWERED_MOB);
+        vindicator.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+        vindicator.addTag(TAG_BOSS_MINION);
+        level.addFreshEntity(vindicator);
+    }
+
+    private static void summonEvoker(ServerLevel level, int mx, int my, int mz) {
+        Mob evoker = EntityType.EVOKER.create(level, EntitySpawnReason.REINFORCEMENT);
+        if (evoker == null) {
+            return;
+        }
+        evoker.setPos(mx + 0.5, (double) my, mz + 0.5);
+        evoker.addTag(LunarPhaseEvents.TAG_POWERED_MOB);
+        evoker.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+        evoker.addTag(TAG_BOSS_MINION);
+        level.addFreshEntity(evoker);
     }
 
     private static void onBossDefeated(ServerLevel level, BlockPos pos) {
@@ -548,12 +620,65 @@ public class BloodMoonBossManager {
         if (xp > 0) {
             ExperienceOrb.award(level, Vec3.atCenterOf(pos), xp);
         }
+        // Minion cleanup is handled centrally by clearArenaAnchor on the arena-end path.
+    }
 
-        // Clear summoned minions around the arena
-        AABB arenaBox = new AABB(pos).inflate(64.0);
-        for (Monster minion : level.getEntitiesOfClass(Monster.class, arenaBox,
-                m -> m.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN))) {
-            minion.discard();
+    /**
+     * Removes the Crimson Altar anchoring the arena (the ritual consumes it at the end
+     * of the fight, regardless of outcome) and clears the stored anchor. Safe to call
+     * when no anchor is set or when the block is no longer an altar. Idempotent.
+     *
+     * @param victory when true, plays a triumphant consumption effect (the boss was
+     *                defeated); when false, a subdued fade effect (dawn / event end)
+     */
+    private static void clearArenaAnchor(ServerLevel level, boolean victory) {
+        // Every arena end path funnels through here, so clear the boss's minions too —
+        // this covers the branches that do not go through onBossDefeated/despawnBossOnDawn
+        // (e.g. despawnAtDawn disabled, /bloodmoon stop) and the legacy no-anchor spawn.
+        clearBossMinions(level);
+
+        BlockPos anchor = arenaAnchorPos;
+        arenaAnchorPos = null;
+        if (anchor == null) {
+            return;
+        }
+        if (level.getBlockState(anchor).getBlock() instanceof com.coderdiaz.enjoynights.block.CrimsonAltarBlock) {
+            double cx = anchor.getX() + 0.5;
+            double cy = anchor.getY() + 0.6;
+            double cz = anchor.getZ() + 0.5;
+            if (victory) {
+                // Triumphant release: golden burst and an uplifting chime as the altar is
+                // consumed by the completed ritual.
+                level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, cx, cy, cz, 60, 0.4, 0.6, 0.4, 0.25);
+                level.sendParticles(ParticleTypes.END_ROD, cx, cy, cz, 25, 0.3, 0.6, 0.3, 0.05);
+                level.playSound(null, cx, anchor.getY() + 0.5, cz, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.BLOCKS, 1.0F, 1.2F);
+                level.playSound(null, cx, anchor.getY() + 0.5, cz, SoundEvents.TOTEM_USE, SoundSource.BLOCKS, 0.8F, 1.0F);
+            } else {
+                // Subdued fade: the ritual collapses into smoke at dawn / event end.
+                level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, cx, cy, cz, 30, 0.3, 0.5, 0.3, 0.05);
+                level.sendParticles(ParticleTypes.SMOKE, cx, cy, cz, 20, 0.3, 0.4, 0.3, 0.02);
+                level.playSound(null, cx, anchor.getY() + 0.5, cz, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.BLOCKS, 1.0F, 0.7F);
+            }
+            level.removeBlock(anchor, false);
+        }
+    }
+
+    /**
+     * Removes every mob summoned as part of the boss fight, anywhere in the level. Uses
+     * a global tag scan (not a radius box) so minions that wandered off chasing a fleeing
+     * player are still cleaned up, and operates on {@link Mob} rather than {@link Monster}
+     * so illager reinforcements (Vindicator, Evoker) are covered regardless of their
+     * class hierarchy. Matches the dedicated boss-minion tag so regular siege mobs (which
+     * share the generic extra-spawn tag) are left untouched and keep spawning elsewhere.
+     */
+    private static void clearBossMinions(ServerLevel level) {
+        for (Entity entity : level.getAllEntities()) {
+            if (entity instanceof Mob mob
+                    && mob.isAlive()
+                    && mob.getTags().contains(TAG_BOSS_MINION)
+                    && !mob.getTags().contains(TAG_BOSS)) {
+                mob.discard();
+            }
         }
     }
 

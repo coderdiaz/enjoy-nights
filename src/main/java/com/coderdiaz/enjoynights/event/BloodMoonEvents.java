@@ -300,6 +300,19 @@ public class BloodMoonEvents {
 
                 BlockPos spawnPos = new BlockPos(spawnX, spawnY, spawnZ);
 
+                // While a boss arena is active, suppress regular siege spawns within the
+                // suppression radius (wider than the battle arena) so the surroundings stay
+                // clear during the fight. The boss still summons its own minions directly.
+                // Spawns resume everywhere once the boss is defeated (anchor cleared).
+                if (EnjoyNightsConfig.SERVER.bloodMoonBossArenaSuppressSieges.get()
+                        && BloodMoonBossManager.isArenaActive()) {
+                    BlockPos anchor = BloodMoonBossManager.getArenaAnchor();
+                    int suppressRadius = BloodMoonBossManager.getSuppressRadius();
+                    if (anchor != null && anchor.distSqr(spawnPos) <= (double) suppressRadius * suppressRadius) {
+                        continue;
+                    }
+                }
+
                 // If inside a ward, relocate to the perimeter outside the base.
                 WardingSavedData.WardEntry ward = WardingSavedData.get(level).findNearestActiveWard(spawnPos, EnjoyNightsConfig.SERVER.wardingTotemRadius.get());
                 if (ward != null) {
@@ -401,6 +414,14 @@ public class BloodMoonEvents {
         }
 
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), EntitySpawnReason.REINFORCEMENT, null);
+
+        // Siege mobs are spawned manually and never fire FinalizeSpawnEvent, so apply the
+        // Blood Moon empowerment (potion buffs, follow range, charged creepers, flame
+        // skeletons) directly — otherwise they would spawn as plain, un-powered mobs.
+        if (mob instanceof Monster siegeMonster) {
+            LunarPhaseEvents.applyLunarEmpowerment(siegeMonster, false, true);
+        }
+
         if (mob instanceof Monster) {
             mob.setTarget(target);
         }
@@ -411,6 +432,26 @@ public class BloodMoonEvents {
     public static void onCheckSpawn(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck event) {
         if (event.getLevel() instanceof ServerLevel serverLevel) {
             BlockPos pos = event.getEntity().blockPosition();
+
+            // Boss arena: suppress natural spawns inside the suppression radius while a
+            // boss is active. Mobs summoned by the boss (tagged extra-spawn / boss) are
+            // ALWAYS exempt so its reinforcements still appear even though they fall
+            // within the suppression radius — the suppression rule only targets regular
+            // natural/siege spawns. (Boss minions are also added via addFreshEntity, which
+            // does not fire this check; this tag guard is a defensive double-safety.)
+            if (EnjoyNightsConfig.SERVER.bloodMoonBossArenaSuppressSieges.get()
+                    && BloodMoonBossManager.isArenaActive()
+                    && event.getEntity() instanceof Monster
+                    && !event.getEntity().getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN)
+                    && !event.getEntity().getTags().contains(BloodMoonBossManager.TAG_BOSS)) {
+                BlockPos anchor = BloodMoonBossManager.getArenaAnchor();
+                int suppressRadius = BloodMoonBossManager.getSuppressRadius();
+                if (anchor != null && anchor.distSqr(pos) <= (double) suppressRadius * suppressRadius) {
+                    event.setResult(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck.Result.FAIL);
+                    return;
+                }
+            }
+
             WardingSavedData.WardEntry ward = WardingSavedData.get(serverLevel)
                     .findNearestActiveWard(pos, EnjoyNightsConfig.SERVER.wardingTotemRadius.get());
 

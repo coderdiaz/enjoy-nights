@@ -101,6 +101,10 @@ public class EnjoyNightsConfig {
         public final ModConfigSpec.IntValue bloodMoonBossChargedAttackCooldownSeconds;
         public final ModConfigSpec.IntValue bloodMoonBossRecoveryTicks;
         public final ModConfigSpec.BooleanValue bloodMoonBossPhase2Enabled;
+        public final ModConfigSpec.IntValue bloodMoonBossArenaRadius;
+        public final ModConfigSpec.IntValue bloodMoonBossArenaSuppressRadius;
+        public final ModConfigSpec.BooleanValue bloodMoonBossArenaSuppressSieges;
+        public final ModConfigSpec.DoubleValue bloodMoonBossArenaRegenPerSecond;
 
         public Server(ModConfigSpec.Builder builder) {
             builder.comment("Server-side configurations for Enjoy Nights!").push("server");
@@ -453,6 +457,22 @@ public class EnjoyNightsConfig {
             bloodMoonBossPhase2Enabled = builder
                     .comment("Whether the boss enters Phase 2 'Furia del Eclipse' when below 40% health (default: true)")
                     .define("bloodMoonBossPhase2Enabled", true);
+
+            bloodMoonBossArenaRadius = builder
+                    .comment("Radius in blocks of the boss battle arena anchored at the Crimson Altar. The boss cannot leave this radius and retargets players inside it (default: 56)")
+                    .defineInRange("bloodMoonBossArenaRadius", 56, 24, 128);
+
+            bloodMoonBossArenaSuppressRadius = builder
+                    .comment("Radius in blocks around the altar where regular Blood Moon siege spawns are suppressed while the boss is active. Typically larger than the battle arena so the surroundings stay clear during the fight; spawns resume everywhere once the boss is defeated (default: 72)")
+                    .defineInRange("bloodMoonBossArenaSuppressRadius", 72, 24, 256);
+
+            bloodMoonBossArenaSuppressSieges = builder
+                    .comment("Suppress regular Blood Moon siege spawns within the suppression radius while the boss is active (the boss still summons its own minions) (default: true)")
+                    .define("bloodMoonBossArenaSuppressSieges", true);
+
+            bloodMoonBossArenaRegenPerSecond = builder
+                    .comment("Health per second the boss regenerates while no player remains inside the arena and it has returned to the altar (reset-style penalty for fleeing; 0 disables) (default: 2.0)")
+                    .defineInRange("bloodMoonBossArenaRegenPerSecond", 2.0, 0.0, 20.0);
             builder.pop();
 
             builder.pop();

@@ -83,7 +83,10 @@ public class CrimsonAltarBlockEntity extends BlockEntity {
                 serverLevel.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.WARDEN_HEARTBEAT, SoundSource.BLOCKS, 1.4F, 0.75F);
             }
 
-            // At 80 ticks (4 seconds), strike lightning, destroy altar, and spawn the boss!
+            // At 80 ticks (4 seconds), strike lightning and spawn the boss. The altar is
+            // NOT destroyed here: it stays placed as the arena anchor (kept indestructible
+            // by its RITUAL_ACTIVE blockstate) and is removed by BloodMoonBossManager when
+            // the fight ends. We only stop the ritual loop so it does not re-summon.
             if (altar.ritualTicks >= 80) {
                 LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(serverLevel, EntitySpawnReason.EVENT);
                 if (bolt != null) {
@@ -92,11 +95,10 @@ public class CrimsonAltarBlockEntity extends BlockEntity {
                     serverLevel.addFreshEntity(bolt);
                 }
 
-                serverLevel.removeBlock(pos, false);
-
                 Player summoner = altar.summonerUuid != null ? serverLevel.getPlayerByUUID(altar.summonerUuid) : null;
                 BloodMoonBossManager.spawnBossFromRitual(serverLevel, pos, summoner);
                 altar.ritualActive = false;
+                altar.setChanged();
             }
         }
     }

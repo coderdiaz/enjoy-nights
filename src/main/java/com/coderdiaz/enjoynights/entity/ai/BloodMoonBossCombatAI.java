@@ -1,6 +1,8 @@
 package com.coderdiaz.enjoynights.entity.ai;
 
 import com.coderdiaz.enjoynights.config.EnjoyNightsConfig;
+import com.coderdiaz.enjoynights.entity.BloodMoonBossManager;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -236,7 +238,15 @@ public class BloodMoonBossCombatAI {
         if (globalAbilityCooldown > 0) globalAbilityCooldown--;
         if (targetCommitmentTicks > 0) targetCommitmentTicks--;
 
-        // 7. Target rotation and commitment system
+        // 7. Arena confinement: the boss is bound to the Crimson Altar anchor. If it is
+        // dragged beyond the arena it is pulled back; if no player remains inside the
+        // arena it returns to the altar and slowly regenerates (reset-style penalty for
+        // fleeing). Both run before targeting so an out-of-arena chase cannot start.
+        if (handleArenaBinding(level)) {
+            return; // Arena is empty: boss is returning/regenerating, skip offensive logic.
+        }
+
+        // 8. Target rotation and commitment system
         updateTargetCommitment(level);
 
         Player currentTarget = null;
@@ -305,13 +315,90 @@ public class BloodMoonBossCombatAI {
         }
     }
 
+    /**
+     * Returns the players currently inside the boss arena (within the configured radius
+     * of the altar anchor). Falls back to a boss-centered search when no anchor is set
+     * (e.g. the legacy auto-spawn without an altar), preserving the original behavior.
+     */
+    private List<Player> playersInArena(ServerLevel level) {
+        BlockPos anchor = BloodMoonBossManager.getArenaAnchor();
+        if (anchor == null) {
+            AABB searchBox = boss.getBoundingBox().inflate(48.0);
+            return level.getEntitiesOfClass(Player.class, searchBox, p -> !p.isSpectator() && p.isAlive());
+        }
+        double radius = BloodMoonBossManager.getArenaRadius();
+        AABB arenaBox = new AABB(anchor).inflate(radius);
+        Vec3 center = Vec3.atCenterOf(anchor);
+        double radiusSq = radius * radius;
+        return level.getEntitiesOfClass(Player.class, arenaBox,
+                p -> !p.isSpectator() && p.isAlive() && p.position().distanceToSqr(center) <= radiusSq);
+    }
+
+    /**
+     * Enforces the arena leash and the empty-arena reset.
+     *
+     * <p>If the boss has drifted beyond {@code radius * 1.1} (hysteresis to avoid border
+     * ping-pong) it is pulled back toward the altar, teleporting as a last resort when it
+     * ends up well outside. If no player remains in the arena, the boss drops its target,
+     * walks back to the altar and regenerates health at the configured rate.
+     *
+     * @return true when the arena is empty (caller should skip offensive logic this tick)
+     */
+    private boolean handleArenaBinding(ServerLevel level) {
+        BlockPos anchor = BloodMoonBossManager.getArenaAnchor();
+        if (anchor == null) {
+            return false; // No arena (legacy spawn): unconstrained behavior.
+        }
+
+        double radius = BloodMoonBossManager.getArenaRadius();
+        Vec3 center = Vec3.atCenterOf(anchor);
+        double distSq = boss.position().distanceToSqr(center);
+
+        // Leash with hysteresis: only correct once clearly past the boundary.
+        double leash = radius * 1.1;
+        if (distSq > leash * leash) {
+            double dist = Math.sqrt(distSq);
+            if (dist > radius * 1.6) {
+                // Far outside (knocked away / pathing glitch): snap back onto the altar.
+                boss.teleportTo(center.x, anchor.getY(), center.z);
+                boss.getNavigation().stop();
+            } else {
+                // Just past the edge: steer back toward the center.
+                boss.getNavigation().moveTo(center.x, anchor.getY(), center.z, 1.1);
+                Vec3 pull = center.subtract(boss.position()).normalize().scale(0.25);
+                boss.setDeltaMovement(boss.getDeltaMovement().add(pull.x, 0, pull.z));
+                boss.hurtMarked = true;
+            }
+        }
+
+        // Empty-arena reset: no players inside → return to altar and regenerate.
+        if (playersInArena(level).isEmpty()) {
+            boss.setTarget(null);
+            if (distSq > 4.0) {
+                boss.getNavigation().moveTo(center.x, anchor.getY(), center.z, 1.0);
+            } else {
+                boss.getNavigation().stop();
+            }
+
+            double regenPerSecond = EnjoyNightsConfig.SERVER.bloodMoonBossArenaRegenPerSecond.get();
+            if (regenPerSecond > 0.0 && boss.getHealth() < boss.getMaxHealth()) {
+                boss.heal((float) (regenPerSecond / 20.0));
+                if (level.getRandom().nextFloat() < 0.15F) {
+                    level.sendParticles(ParticleTypes.HEART, boss.getX(), boss.getY() + 1.6, boss.getZ(), 1, 0.3, 0.3, 0.3, 0.0);
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
     private void updateTargetCommitment(ServerLevel level) {
         if (targetCommitmentTicks > 0 && boss.getTarget() instanceof Player p && p.isAlive() && !p.isSpectator()) {
             return;
         }
 
-        AABB searchBox = boss.getBoundingBox().inflate(48.0);
-        List<Player> validPlayers = level.getEntitiesOfClass(Player.class, searchBox, p -> !p.isSpectator() && p.isAlive());
+        List<Player> validPlayers = playersInArena(level);
 
         if (validPlayers.isEmpty()) {
             boss.setTarget(null);
