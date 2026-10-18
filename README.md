@@ -82,7 +82,13 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
 * **Overworld Only:** The altar can only be placed in the Overworld; attempting to place it in the Nether or End is rejected and returns the item.
 * **Diamond-Tier Mining:** The altar only drops when mined with a **diamond pickaxe or better**; breaking it with any lesser or incorrect tool destroys it without a drop.
 * **Inert Outside a Blood Moon:** If placed when it is not a Blood Moon night, the altar simply stays put and does nothing — it is not consumed and the item is not refunded. You can mine it back (diamond+ pickaxe) since no boss was summoned, or **right-click it once a Blood Moon night arrives** to begin the ritual.
-* **Indestructible During the Ritual:** Once the summon begins, the altar cannot be mined to abort it; the ritual completes and consumes the altar as the boss rises.
+* **Indestructible During the Ritual:** Once the summon begins, the altar cannot be mined to abort it; the ritual completes and the boss rises. The altar is **not** consumed on summon — it persists as the indestructible anchor of the battle arena (see below) and is removed only when the fight ends.
+* **Altar-Anchored Battle Arena:** The altar defines a battle arena around it (`bloodMoonBossArenaRadius = 56`). While the boss is active:
+  * **Siege suppression (wider radius):** regular Blood Moon siege spawns are suppressed within a larger suppression radius around the altar (`bloodMoonBossArenaSuppressRadius = 72`, toggled by `bloodMoonBossArenaSuppressSieges`) so the surroundings stay clear during the fight. The boss still summons its own reinforcement minions — they are exempt from the suppression and always appear. Normal spawns resume everywhere the instant the boss is defeated.
+  * **Confinement (battle radius):** the boss cannot be dragged out of the battle arena; if pushed or lured past the boundary it is pulled back (teleported as a last resort), so it never wanders off into the world.
+  * **Arena-bound retargeting:** if the targeted player flees the arena, the boss switches to another player still inside the radius instead of chasing.
+  * **Return & regenerate:** if no player remains inside the arena, the boss walks back to the altar and slowly regenerates health (`bloodMoonBossArenaRegenPerSecond = 2.0`, 0 disables) — fleeing only resets your progress.
+  * **Consumed when the boss falls:** the altar is removed the moment the boss is defeated or otherwise eliminated (with a triumphant burst on victory, a subdued fade at dawn), so no indestructible block is left behind and the world returns to normal immediately.
 * **Strict Surface Requirement (No Caves):** The ritual strictly rejects attempts underground or without direct sky access (`canSeeSky`), protecting players from cramped subterranean glitches and returning the altar to their inventory.
 * **1000-Block Dynamic Player Scaling:** Before spawning, the altar scans for all active players within a **1000-block radius** (`bloodMoonBossScalingRadius = 1000.0`), dynamically scaling boss health ($200\text{ HP} + 100\text{ HP}$ per extra player) while keeping base damage consistent at 14.0 for fair survival.
 * **10-Minute Freeze & Dawn Despawn:**
@@ -101,7 +107,7 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
   * **Punish Windows (Recovery Frames):** After unleashing heavy moves (Leap, Shockwave, or Charged Lunge), the boss pauses for ~1.75s (`bloodMoonBossRecoveryTicks = 35`), giving observant players a window to punish and counterattack.
   * **Phase 2 - Furia del Eclipse (< 40% HP):** Emits soul-fire trails, gains Speed & Strength, attacks ignite targets, and ability cooldowns are halved.
   * **Midnight Roar:** Emits an echoing roar inflicting Darkness and Slowness on nearby players (`bloodMoonBossRoarCooldownSeconds = 30`).
-  * **Reinforcement Waves:** Summons fiery skeletons and armored zombies at 75%, 50%, and 25% health.
+  * **Reinforcement Waves:** Summons reinforcements at 75%, 50%, and 25% health. The common core is fiery skeletons and armored zombies, with rarer illager specialists mixed in — a **10% chance for a Vindicator** and a **5% chance for an Evoker** per summoned minion.
 * **Glorious Victory:** Vanquishing the boss broadcasts a global victory message, unfreezes the passage of time toward dawn, and awards 500 XP, Diamonds, Emeralds, Amethyst Shards, and a Totem of Undying.
 * **100% Server Configurable:** All boss stats, scaling radius, ritual requirements, freeze durations, moveset cooldowns, and mechanics can be fine-tuned in `enjoy_nights-server.toml`.
 
@@ -285,6 +291,14 @@ All mechanics are 100% customizable:
         bloodMoonBossRecoveryTicks = 35
         # Enable Phase 2 "Furia del Eclipse" below 40% health
         bloodMoonBossPhase2Enabled = true
+        # Radius in blocks of the altar-anchored battle arena (boss confinement + retargeting)
+        bloodMoonBossArenaRadius = 56
+        # Radius in blocks around the altar where siege spawns are suppressed while the boss is active (usually wider than the arena; boss minions still spawn)
+        bloodMoonBossArenaSuppressRadius = 72
+        # Suppress regular siege spawns inside the suppression radius while the boss is active (boss minions still spawn)
+        bloodMoonBossArenaSuppressSieges = true
+        # Health per second the boss regenerates while the arena is empty and it has returned to the altar (0 disables)
+        bloodMoonBossArenaRegenPerSecond = 2.0
 ```
 
 ### Client Configuration (`config/enjoy_nights-client.toml`)
