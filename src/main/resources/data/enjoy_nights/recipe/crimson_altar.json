@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": "minecraft:amethyst_shard",
+    "C": "minecraft:crying_obsidian",
+    "E": "minecraft:ender_eye",
+    "R": "minecraft:redstone_block"
+  },
+  "pattern": [
+    "ACA",
+    "CEC",
+    "ARA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "enjoy_nights:crimson_altar"
+  }
+}

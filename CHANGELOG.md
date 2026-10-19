@@ -4,6 +4,34 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
+## [1.2.0] - 2026-09-20
+
+### Added
+* **Blood Moon Zenith Boss (*El Heraldo Carmesí*):** A ritual-summoned boss with an Elden Ring-style telegraphed moveset (cleave, charged lunge, ground fissure, repulsion wave, and a directed leap that disperses the group), a multi-phase fight with reinforcements (fiery skeletons and armored zombies, plus a rarer Vindicator or Evoker), a Phase 2 enrage below 40% HP, an on-screen boss bar, and a rewarding victory. Time freezes at midnight for the battle; if the boss is not defeated before dawn it vanishes without rewards.
+* **Crimson Altar:** A craftable block used to summon the boss during a Blood Moon. It can only be placed in the Overworld on the surface, drops only when mined with a diamond pickaxe or better, stays inert (and recoverable) if placed outside a Blood Moon, and becomes indestructible once the ritual begins.
+* **Warding Totem:** A craftable base sanctuary that repels mob spawns within its radius to the perimeter. Bound to its owner, limited to one active totem per player, with safe deactivation and refund. It is the only safe haven during a Blood Moon.
+* **Escalating Blood Moon sieges:** Siege waves are now larger and grow as the night deepens, with a mixed, weighted composition — a core of zombies, poisonous cave spiders, and skeletons, plus rare late-wave units (husks, strays, witches, vindicators, breezes) and a chance for an elite Wither Skeleton.
+* **New threats:** Poisonous cave spiders, flame skeletons (fiery archers), and a rare eerie witch on Full Moon nights.
+* **Anticipatory event warnings:** Chat warnings before Blood Moon (days ahead and at sunset) and Full Moon (at sunset) so players can prepare. `/enjoynights info` now predicts the coming night's event.
+* **Blood Moon torch immunity:** Outside a Warding Totem, monsters ignore torch and lantern light during a Blood Moon.
+* **Admin command:** `/enjoynights purge` to force-remove all event mobs across loaded dimensions.
+
+### Changed
+* **Event identity & difficulty:** The Blood Moon is now a distinctly harder, escalating siege, clearly separated from the Full Moon's "empowered individuals" night. The boss fight was rebalanced for groups (diminishing health scaling, capped reinforcements, softened roar) to stay challenging but winnable.
+* **Boss leap:** Reworked into a committed, directed jump that lands on a targeted player and unleashes a dispersal shockwave, with clearer telegraphs and punish windows so heavy moves no longer chain unfairly.
+* **Crimson Altar appearance:** Now uses a custom summoning-altar model (with ambient particles while awaiting a Blood Moon) instead of reusing the respawn anchor textures.
+* **Boss arena anchored to the altar:** The Crimson Altar is no longer consumed when the boss is summoned; it stays as an indestructible anchor that defines a battle arena around it. While the boss is active, the boss cannot be dragged out of its battle radius and retargets any player inside it, and regular siege spawns are suppressed in a wider radius around the altar (the boss still summons its own minions, which always appear). If every player leaves the arena, the boss walks back to the altar and slowly regenerates health. The altar is consumed — and normal siege spawning resumes immediately — the moment the boss is defeated or eliminated, rather than waiting for the night to end.
+* **Blood Moon scope:** The event now only affects players in the Overworld.
+* **Boss combat feel & balance:** Reworked the boss encounter to feel fairer and more readable without losing its Elden Ring identity. Heavy moves (leap, shockwave, charged lunge, repulsion) no longer chain their knockbacks — a short per-player grace window prevents being juggled in the air, and their vertical launches were softened. Ordinary melee strikes now have a real chance to land at close range instead of constant lunges, and heavy moves are picked with variety rather than a fixed order. A longer shared lockout (applied in both phases) spaces heavy moves out, the boss keeps a steadier target in group fights, and its roar no longer overlaps another attack. Group health scaling and base damage were lowered so a 3-player team in unenchanted Netherite can win. Also fixed the boss getting permanently stuck when lured into a pit (it now teleports back to the surface).
+* **Boss moveset enrichment:** The boss now reads and fights like a colossus. Its heavy strikes land as weighty overhead slams (ground burst + deep impact sounds) instead of tiny sword "scratches", and every few steps it shakes the ground with a heavy footfall. Three new attacks join the rotation: a **Stomp** that damages and briefly slows players hugging its legs, a dodgeable **Wither Skull volley** for players keeping their distance, and telegraphed **Soul Fire Pillars** that erupt under marked positions after a short warning. It also gains a **Spin Cleave** (a 360° sweep that shoves a surrounding group outward), a **Grab Toss** that seizes and hurls a player who face-tanks it too long, and a **commander roar** that rallies and buffs its own minions. The guaranteed Wither-on-hit was replaced with a configurable chance (25% by default), and every new attack has its own config toggle. Spectator and creative players are excluded from all damage, targeting and scaling.
+* **Event mob cleanup visuals:** When a lunar event ends, removed mobs now play the vanilla death "poof" particle burst and a death sound instead of vanishing silently, so the sweep reads as them being eliminated. These mobs drop no items or XP, since they were not defeated by a player.
+
+### Fixed
+* **Boss lingering after dawn:** An undefeated boss could survive past the end of the Blood Moon while time was frozen; it now always despawns without rewards when the event ends.
+* **Event mob accumulation:** Mobs created or empowered by lunar events are now cleaned up reliably when the event ends (regardless of location) and on chunk reload, preventing entity buildup and server performance loss. Empowered natural mobs are reverted to normal rather than deleted.
+
+---
+
 ## [1.1.1] - 2026-09-19
 
 ### 🐛 Bug Fixes

@@ -40,6 +40,7 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
   * 50% chance for monsters to spawn with **Strength** and **Speed** potion effects.
   * **Anti-Exploit Creeper Mechanics:** Creepers never receive potion effects (preventing permanent lingering potion clouds upon explosion); instead, they have a **5% chance to spawn as Charged Creepers** (`fullMoonChargedCreeperChance = 0.05`) and receive a direct +15% movement speed attribute buff.
   * Defeating powered monsters rewards **3x Experience** (`fullMoonExperienceMultiplier = 3`).
+  * **Rare Eerie Witch (3% chance):** A natural monster spawn may be accompanied by a lone **Witch** (`fullMoonWitchChance = 0.03`) as an unsettling standalone threat — Full Moon has no sieges, so this is an atmospheric encounter, never a swarm (at most one lone witch nearby at a time).
 
 ### 6. Enclosed Dark Area Paranoia
 * If a player stays **still for more than 3 minutes (180s)** in an enclosed area (under a ceiling / no sky exposure) with **block light at 0** during the night:
@@ -56,17 +57,70 @@ Integrates seamlessly with Minecraft's native 8-phase astronomical cycle:
   * Inherits all mineral drops and 3x XP from the Full Moon, with a 75% chance for monsters to gain **Strength II**, **Resistance**, and **Speed**.
   * **Charged Creepers (25% chance):** Creepers have a 25% chance to spawn powered (`bloodMoonChargedCreeperChance = 0.25`) without dropping lingering potion clouds.
 * **Balanced Siege Mob Spawning (Anti-Lag):**
-  * Natural monster spawns have a 35% chance to spawn an additional companion mob.
-  * Small periodic waves of 1-2 siege zombies spawn every 30 seconds around active players.
-  * **Strict Safety Cap (`bloodMoonMaxNearbyMobs = 16`):** If there are already 16 or more monsters within 32 blocks of a player, extra spawns are paused to prevent server lag or overwhelming swarms.
+  * Natural monster spawns have a 35% chance to spawn an additional companion mob. During Blood Moon, this companion has a configurable chance (`bloodMoonCaveSpiderChance = 0.20`) to be a **poisonous Cave Spider** ambusher that inflicts **Poison** on hit (`bloodMoonCaveSpiderPoisonSeconds = 5`, `bloodMoonCaveSpiderPoisonAmplifier = 0`).
+  * **Escalating mixed-composition waves:** Siege waves now spawn **3–5 mobs** per player (`bloodMoonSiegeWaveMinMobs = 3`, `bloodMoonSiegeWaveMaxMobs = 5`) every 30 seconds, growing larger as the night deepens (`bloodMoonSiegeEscalationEnabled = true`). Composition is weight-driven: a **core** of Zombies, Cave Spiders, and Skeletons, with **rare escalation units** — Husks, Strays, Witches, Vindicators, and Breezes — unlocking only in late waves (past midnight and after `bloodMoonSiegeEscalationWavesBeforeElite = 3` waves).
+  * **Elite Wither Skeleton (~1%):** Late-wave skeleton slots have a small chance (`bloodMoonWitherSkeletonEliteChance = 0.01`) to become an elite Wither Skeleton that inflicts **Wither** on hit and gains **Resistance** (this is *not* the Crimson boss).
+  * **Escalating Safety Cap:** The nearby-mob cap rises from the baseline (`bloodMoonMaxNearbyMobs = 16`) toward a nighttime ceiling (`bloodMoonSiegeMaxCapNight = 24`) as midnight approaches, then holds — keeping sieges intense but performance bounded.
 
-### 8. Advanced Zombie Siege AI
-* **Blood Scent (Tracking through walls):** During the Blood Moon, zombies sense players through walls and closed doors (`mustSee = false`) within a 32-block radius, meaning they **never lose their target** when you enter a house.
-* **Anti-Mountain Terrain Logic:** The AI distinguishes walkable hillside slopes from real barricades. **Zombies will never attack natural dirt steps**; they simply jump over them to pursue you.
-* **Relentless Barricade Breaching:**
-  * When barricaded or behind doors, the zombie locks in place (`navigation.stop()`) and pounds the obstacle continuously without mid-way cancellations from door windows or internal player movement.
-  * Capable of destroying **wooden blocks** (doors, trapdoors, planks, logs, fences) and **dirt/dust blocks** (dirt, sand, gravel).
-  * Plays authentic Minecraft wood hit sounds (`1019`) and full door break sounds (`1021`), completely clearing both halves of doors so the zombie can immediately charge in.
+### 8. Anticipatory Event Warnings
+* **See it coming:** Players no longer learn about lunar events only when they start. Chat warnings give you time to prepare.
+* **Blood Moon advance notice:** A chat warning is broadcast **3 days before** a Blood Moon siege by default (`bloodMoonWarningDaysBefore = 3`, `bloodMoonWarningEnabled = true`), fired once that day. Automatically skipped if the configured lead is greater than or equal to `bloodMoonIntervalDays`.
+* **Blood Moon sunset warning:** On the Blood Moon day, a chat warning appears during the sunset window before night falls (`bloodMoonPreDuskWarningTicks = 300` = 15s, `bloodMoonPreDuskWarningEnabled = true`). The cinematic title still plays when night actually begins — this is an additional heads-up, not a replacement.
+* **Full Moon sunset warning:** On a Full Moon day, a lighter chat warning appears during the sunset window before night falls (`fullMoonPreDuskWarningTicks = 200` = 10s, `fullMoonWarningEnabled = true`), hinting that monsters will be stronger that night. Works even if the Blood Moon siege mechanic is disabled.
+* **Chat-only & non-intrusive:** All anticipatory warnings are plain chat messages — no sounds, no cinematic. Each fires at most once per relevant day and is independently toggleable.
+
+### 9. Warding Totem (Base Sanctuary & Perimeter Repulsion)
+* **Craftable Base Protection:** Placeable mystic totem (`enjoy_nights:warding_totem`) that creates a protective boundary in a **100-block radius** (`wardingTotemRadius = 100`).
+* **Perimeter Repulsion Forcefield:** Instead of deleting mob spawns, monsters attempting to spawn within the 100-block protection radius are pushed outward and relocated to the perimeter exterior (102–106 blocks away on safe surface ground), preserving world mob density and concentrating sieges outside your base walls.
+* **Amethyst Catalyst GUI:** Right-clicking the totem opens an interactive interface with an activation slot. Depositing **8 Amethyst Shards** (`wardingTotemAmethystCost = 8`) and clicking **[Activar]** binds the totem to your UUID.
+* **Strict Anti-Abuse (1 Active Totem per Player):** Each player can only maintain 1 active totem at a time. Attempting to activate a second totem elsewhere on the server is rejected and reports the coordinates of your active base totem.
+* **Safe Deactivation & Refund:** Deactivating the totem frees the player's binding and safely returns the 8 amethyst shards to your inventory.
+* **Permanent Destruction (No Silk Touch Recovery):** Mining or breaking the totem block in the world permanently destroys it without dropping the totem item (even when mined with a Silk Touch pickaxe). Any stored amethysts are refunded on break.
+
+### 10. Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Crimson Altar Ritual
+* **Crimson Altar Ritual Summoning (`crimson_altar`):** Rather than forced random spawns, the boss is summoned by crafting and placing the **Crimson Altar** during a Blood Moon night on the surface under open sky (`bloodMoonBossRequireRitual = true`).
+* **Overworld Only:** The altar can only be placed in the Overworld; attempting to place it in the Nether or End is rejected and returns the item.
+* **Diamond-Tier Mining:** The altar only drops when mined with a **diamond pickaxe or better**; breaking it with any lesser or incorrect tool destroys it without a drop.
+* **Inert Outside a Blood Moon:** If placed when it is not a Blood Moon night, the altar simply stays put and does nothing — it is not consumed and the item is not refunded. You can mine it back (diamond+ pickaxe) since no boss was summoned, or **right-click it once a Blood Moon night arrives** to begin the ritual.
+* **Indestructible During the Ritual:** Once the summon begins, the altar cannot be mined to abort it; the ritual completes and the boss rises. The altar is **not** consumed on summon — it persists as the indestructible anchor of the battle arena (see below) and is removed only when the fight ends.
+* **Altar-Anchored Battle Arena:** The altar defines a battle arena around it (`bloodMoonBossArenaRadius = 56`). While the boss is active:
+  * **Siege suppression (wider radius):** regular Blood Moon siege spawns are suppressed within a larger suppression radius around the altar (`bloodMoonBossArenaSuppressRadius = 72`, toggled by `bloodMoonBossArenaSuppressSieges`) so the surroundings stay clear during the fight. The boss still summons its own reinforcement minions — they are exempt from the suppression and always appear. Normal spawns resume everywhere the instant the boss is defeated.
+  * **Confinement (battle radius):** the boss cannot be dragged out of the battle arena; if pushed or lured past the boundary it is pulled back (teleported as a last resort), so it never wanders off into the world.
+  * **Arena-bound retargeting:** if the targeted player flees the arena, the boss switches to another player still inside the radius instead of chasing.
+  * **Return & regenerate:** if no player remains inside the arena, the boss walks back to the altar and slowly regenerates health (`bloodMoonBossArenaRegenPerSecond = 2.0`, 0 disables) — fleeing only resets your progress.
+  * **Consumed when the boss falls:** the altar is removed the moment the boss is defeated or otherwise eliminated (with a triumphant burst on victory, a subdued fade at dawn), so no indestructible block is left behind and the world returns to normal immediately.
+* **Strict Surface Requirement (No Caves):** The ritual strictly rejects attempts underground or without direct sky access (`canSeeSky`), protecting players from cramped subterranean glitches and returning the altar to their inventory.
+* **1000-Block Dynamic Player Scaling:** Before spawning, the altar scans for all active players within a **1000-block radius** (`bloodMoonBossScalingRadius = 1000.0`), dynamically scaling boss health ($200\text{ HP} + 100\text{ HP}$ per extra player) while keeping base damage consistent at 14.0 for fair survival.
+* **10-Minute Freeze & Dawn Despawn:**
+  * When summoned, time freezes at midnight for **up to 10 minutes** (`bloodMoonBossFreezeDurationSeconds = 600`).
+  * Once the 10 minutes expire, time resumes natural progression towards dawn, giving players until sunrise to finish the battle.
+  * **Dawn Despawn in Darkness:** If players fail to defeat the boss before dawn arrives, the boss releases an ominous wave of darkness and blindness, fading into the morning shadows without dropping victory rewards (`bloodMoonBossDespawnAtDawn = true`).
+* **On-Screen Boss Bar:** Displays a vivid red boss bar (`ServerBossEvent`) at the top of the screen tracking health and engagement within 128 blocks.
+* **Imposing Scale & Colossus Stride:** Towering at **1.7x scale** (`Attributes.SCALE`) with a 1.25 step height (`Attributes.STEP_HEIGHT`), navigating single-block elevations effortlessly.
+* **Smart Multi-Target Aggro:** Commits to targets in 5-second windows to avoid stuttering pathfinding bugs, while tracking player threat to aggressively retarget snipers and archers.
+* **Elden Ring-Style Moveset & Telegraphed Attacks:**
+  * **Colossus Presence:** At 1.7x scale the boss shakes the ground with a heavy footfall every few steps, and its strikes land as weighty overhead slams (ground burst + deep impact sounds) rather than thin sword sweeps.
+  * **Conical Cleave Attack:** Sweeping netherite axe swings deal damage in a 140° frontal cone to all players in melee reach.
+  * **Colossus Stomp (`bloodMoonBossStompEnabled`):** A short-range ground slam at the boss's feet that damages and briefly applies Slowness to players hugging its legs, punishing melee that never backs off.
+  * **Spin Cleave (`bloodMoonBossSpinCleaveEnabled`):** A 360° sweeping strike that hits every player around the colossus and shoves them outward, forcing a surrounding group to give it space.
+  * **Telegraphed Charged Lunge & Sweeping Dash:** Winds up with raised blade and dynamic target tracking, then charges forward delivering a 140° wide sweep with massive damage and knockback.
+  * **Devastating Leap Slam (Anti-Kiting & Anti-Gank):** When targets stay between 8 and 24 blocks away, the boss performs a committed leap that arcs through the air and lands on a targeted player (tracking them mid-air, with a ground impact-zone telegraph), forcing the group to scatter. On landing it unleashes a dispersal shockwave (`bloodMoonBossLeapRadius`, `bloodMoonBossLeapKnockback`) that blasts surrounding players away and **disables shields for 5 seconds**.
+  * **Wither Skull Volley (`bloodMoonBossSkullVolleyEnabled`):** At mid/long range the boss launches a spread of homing wither skulls (3 in Phase 2) — a dodgeable, blockable ranged threat so distant players are not safe.
+  * **Soul Fire Pillars (`bloodMoonBossSoulPillarsEnabled`):** Marks up to three players' positions with a brief soul-fire telegraph, then erupts those zones for damage and ignite — move out of the marked ground or pay for it.
+  * **Ground Fissure:** Slams the ground launching all nearby players into the air with vertical knockup.
+  * **Repulsion Wave (Anti-Gank):** If 3 or more players crowd the boss within 3.5 blocks, emits a concussive shockwave blasting everyone back.
+  * **Grab Toss (`bloodMoonBossGrabEnabled`):** If a player clings in melee for too long (~4s), the boss seizes them, pulls them in front and hurls them up and away with Slowness, breaking the perma-face-tank strategy.
+  * **Wither on Hit (`bloodMoonBossWitherOnHitChance`):** Melee strikes have a configurable chance (25% by default) to inflict Wither, instead of the old guaranteed application.
+  * **Punish Windows (Recovery Frames):** After unleashing heavy moves, the boss pauses (`bloodMoonBossRecoveryTicks = 35`), giving observant players a window to punish and counterattack. Heavy moves share a lockout (`bloodMoonBossAbilityLockoutTicks`) so they never chain back-to-back.
+  * **Phase 2 - Furia del Eclipse (< 40% HP):** Emits soul-fire trails, gains Speed, attacks ignite targets, and individual ability cooldowns are halved (the shared lockout still applies).
+  * **Midnight Roar (Commander Rally):** Emits an echoing roar inflicting Darkness and Slowness on nearby players (`bloodMoonBossRoarCooldownSeconds = 30`), deferred so it never overlaps another attack. With `bloodMoonBossRoarRallyEnabled`, the roar also marshals its nearby minions — pulling them toward the boss and granting a short Speed + Strength surge.
+  * **Reinforcement Waves:** Summons reinforcements at 75%, 50%, and 25% health. The common core is fiery skeletons and armored zombies, with rarer illager specialists mixed in — a **10% chance for a Vindicator** and a **5% chance for an Evoker** per summoned minion.
+* **Glorious Victory:** Vanquishing the boss broadcasts a global victory message, unfreezes the passage of time toward dawn, and awards 500 XP, Diamonds, Emeralds, Amethyst Shards, and a Totem of Undying.
+* **100% Server Configurable:** All boss stats, scaling radius, ritual requirements, freeze durations, moveset cooldowns, and mechanics can be fine-tuned in `enjoy_nights-server.toml`.
+
+### 11. Blood Moon Torch Immunity & Flame Skeletons
+* **Torch & Light Immunity:** Outside of protected Warding Totem areas, monsters during a Blood Moon ignore block light emitted by torches, lanterns, and glowstone (`bloodMoonIgnoreTorches = true`). The Warding Totem is the only safe haven where monsters cannot spawn.
+* **Flame Skeletons (15% chance):** Skeletons spawning during Blood Moon have a 15% chance (`bloodMoonFlameSkeletonChance = 0.15`) to spawn as fiery archers equipped with helmets and Flame-enchanted bows, firing incendiary arrows that ignite players and blocks (their flame bows and helmets never drop upon death to prevent loot farming).
 
 ---
 
@@ -107,12 +161,26 @@ All mechanics are 100% customizable:
         fullMoonChargedCreeperChance = 0.05
         # Chance (0.0 to 1.0) for creepers to spawn as Charged Creepers on Blood Moon (default: 0.25 = 25%)
         bloodMoonChargedCreeperChance = 0.25
+        # Send a chat warning in the sunset window on a Full Moon day, before night falls
+        fullMoonWarningEnabled = true
+        # Ticks before dusk (tick 12500) to send the Full Moon pre-nightfall chat warning (200 = 10s)
+        fullMoonPreDuskWarningTicks = 200
+        # Remove event-spawned mobs and revert empowered natural mobs when a lunar event ends; also cleans lingering/legacy event mobs on chunk reload
+        eventMobCleanupEnabled = true
+        # Chance (0.0 to 1.0) for a natural Full Moon spawn to be accompanied by a rare, eerie lone Witch (default: 0.03 = 3%)
+        fullMoonWitchChance = 0.03
 
     [server.paranoia]
         # Seconds standing still in a dark enclosed space before paranoia triggers (180s = 3 min)
         paranoiaDurationSeconds = 180
         # Enables weakness effects and spooky auditory hallucinations
         paranoiaWeaknessEnabled = true
+
+    [server.warding_totem]
+        # Radius in blocks protected by an active Warding Totem from mob spawns (default: 100)
+        wardingTotemRadius = 100
+        # Number of amethyst shards required to activate a Warding Totem (default: 8)
+        wardingTotemAmethystCost = 8
 
     [server.blood_moon]
         # Number of nights between each Blood Moon siege (1 to 365 days)
@@ -130,6 +198,139 @@ All mechanics are 100% customizable:
         bloodMoonMaxNearbyMobs = 16
         # Whether players outdoors during Blood Moon experience sporadic brief darkness pulses
         bloodMoonDarknessPulseEnabled = true
+        # Monsters ignore light from torches outside wards during Blood Moon
+        bloodMoonIgnoreTorches = true
+        # Chance for skeletons to spawn as fire-shooting Flame Skeletons (15%)
+        bloodMoonFlameSkeletonChance = 0.15
+        # Broadcast a chat warning N days before a Blood Moon siege
+        bloodMoonWarningEnabled = true
+        # Number of days before a Blood Moon to warn (ignored if >= bloodMoonIntervalDays)
+        bloodMoonWarningDaysBefore = 3
+        # Send a chat warning in the sunset window on the Blood Moon day (cinematic still plays at night)
+        bloodMoonPreDuskWarningEnabled = true
+        # Ticks before dusk (tick 12500) to send the Blood Moon pre-nightfall chat warning (300 = 15s)
+        bloodMoonPreDuskWarningTicks = 300
+        # Siege wave size per player before escalation
+        bloodMoonSiegeWaveMinMobs = 3
+        bloodMoonSiegeWaveMaxMobs = 5
+        # Grow waves larger and unlock rare units as the night deepens
+        bloodMoonSiegeEscalationEnabled = true
+        # Escalation anti-lag ceiling (should be >= bloodMoonMaxNearbyMobs)
+        bloodMoonSiegeMaxCapNight = 24
+        # Waves that must pass (and be past midnight) before rare units appear
+        bloodMoonSiegeEscalationWavesBeforeElite = 3
+        # Siege composition weights (core units always; rare units only in late waves)
+        bloodMoonWaveZombieWeight = 30
+        bloodMoonWaveCaveSpiderWeight = 15
+        bloodMoonWaveSkeletonWeight = 15
+        bloodMoonWaveHuskWeight = 8
+        bloodMoonWaveStrayWeight = 8
+        bloodMoonWaveWitchWeight = 4
+        bloodMoonWaveVindicatorWeight = 3
+        bloodMoonWaveBreezeWeight = 2
+        # Chance for a late-wave skeleton slot to become an elite Wither Skeleton (Wither on hit)
+        bloodMoonWitherSkeletonEliteChance = 0.01
+        # Poisonous Cave Spider ambusher companion chance + poison on hit
+        bloodMoonCaveSpiderChance = 0.20
+        bloodMoonCaveSpiderPoisonSeconds = 5
+        bloodMoonCaveSpiderPoisonAmplifier = 0
+
+    [server.blood_moon_boss]
+        # Enables the midnight Blood Moon Boss
+        bloodMoonBossEnabled = true
+        # Name displayed on the Boss Bar
+        bloodMoonBossName = "Heraldo de la Luna de Sangre"
+        # Base maximum health for 1 player (default: 200.0 = 100 hearts)
+        bloodMoonBossBaseHealth = 200.0
+        # Extra health added per nearby player in 1000 blocks (default: 60.0 = 30 hearts)
+        bloodMoonBossHealthPerPlayer = 60.0
+        # Diminishing returns on group health scaling (extra players past this add reduced health)
+        bloodMoonBossHealthDiminishAfterPlayers = 1
+        bloodMoonBossHealthDiminishFactor = 0.6
+        # Cap on reinforcement minions summoned per health phase (75%/50%/25%)
+        bloodMoonBossMaxMinionsPerPhase = 4
+        # Base total attack damage (default: 11.0, fair against unenchanted Diamond/Netherite)
+        bloodMoonBossBaseDamage = 11.0
+        # Extra attack damage per nearby player (default: 0.0, damage does not scale per player)
+        bloodMoonBossDamagePerPlayer = 0.0
+        # Movement speed attribute (default: 0.20, colossus pace)
+        bloodMoonBossSpeed = 0.20
+        # Knockback resistance (default: 0.90, anti-stunlock)
+        bloodMoonBossKnockbackResistance = 0.90
+        # Experience points dropped upon defeat (default: 500)
+        bloodMoonBossExperience = 500
+        # Freeze time at midnight during the boss battle (default: true)
+        bloodMoonBossFreezeTime = true
+        # Maximum duration in seconds that time remains frozen before resuming flow (default: 600s = 10m)
+        bloodMoonBossFreezeDurationSeconds = 600
+        # Whether the boss despawns in darkness without rewards if not slain before dawn
+        bloodMoonBossDespawnAtDawn = true
+        # Require deliberate Crimson Altar ritual summoning instead of auto-spawn at midnight
+        bloodMoonBossRequireRitual = true
+        # Radius in blocks around altar used to count players for boss difficulty scaling
+        bloodMoonBossScalingRadius = 1000.0
+        # Summon reinforcement minion waves at 75%, 50%, and 25% health (scales with group size)
+        bloodMoonBossSummonMinions = true
+        # Cooldown in seconds between roar attacks causing darkness/slowness
+        bloodMoonBossRoarCooldownSeconds = 30
+        # Scale multiplier of the boss model and hitbox (default: 1.7)
+        bloodMoonBossScale = 1.7
+        # Enable frontal conical cleave attacks hitting multiple players
+        bloodMoonBossCleaveEnabled = true
+        # Angle in degrees for the frontal cleave cone (default: 140.0)
+        bloodMoonBossCleaveAngle = 140.0
+        # Reach in blocks for cleaving attacks (default: 4.0)
+        bloodMoonBossCleaveRadius = 4.0
+        # Enable devastating leap slam attack at distant archers/players
+        bloodMoonBossLeapAttackEnabled = true
+        # Cooldown in seconds between leap slam attacks (default: 14s)
+        bloodMoonBossLeapCooldownSeconds = 14
+        # Leap slam landing shockwave: radius and outward knockback that disperses the group
+        bloodMoonBossLeapRadius = 6.0
+        bloodMoonBossLeapKnockback = 1.6
+        # Cooldown in seconds between ground shockwave attacks (default: 18s)
+        bloodMoonBossShockwaveCooldownSeconds = 18
+        # Enable telegraphed charged lunge & sweeping dash attack
+        bloodMoonBossChargedAttackEnabled = true
+        # Cooldown in seconds between charged lunge attacks (default: 12s)
+        bloodMoonBossChargedAttackCooldownSeconds = 12
+        # Recovery pause duration in ticks (punish window) after heavy moves (default: 35 ticks = ~1.75s)
+        bloodMoonBossRecoveryTicks = 35
+        # Enable Phase 2 "Furia del Eclipse" below 40% health
+        bloodMoonBossPhase2Enabled = true
+        # Global multiplier for the knockback the boss inflicts with heavy moves (lower = players stay more grounded)
+        bloodMoonBossKnockbackMultiplier = 1.0
+        # Probability (0.0-1.0) the boss throws an ordinary melee strike instead of a heavy move when a player is in reach
+        bloodMoonBossMeleeBias = 0.5
+        # Shared lockout in ticks between heavy moves, applied in both phases so they never chain (65 = ~3.25s)
+        bloodMoonBossAbilityLockoutTicks = 65
+        # Probability (0.0-1.0) that a melee hit inflicts Wither (0 disables)
+        bloodMoonBossWitherOnHitChance = 0.25
+        # Colossus Stomp: short-range ground slam that damages and briefly slows nearby players
+        bloodMoonBossStompEnabled = true
+        bloodMoonBossStompCooldownSeconds = 10
+        # Wither Skull volley: dodgeable ranged attack of homing wither skulls at mid/long range
+        bloodMoonBossSkullVolleyEnabled = true
+        bloodMoonBossSkullVolleyCooldownSeconds = 11
+        # Soul Fire Pillars: telegraphed danger zones that erupt under players' marked positions
+        bloodMoonBossSoulPillarsEnabled = true
+        bloodMoonBossSoulPillarsCooldownSeconds = 16
+        # Spin Cleave: 360-degree sweep that hits all surrounding players and shoves them outward
+        bloodMoonBossSpinCleaveEnabled = true
+        bloodMoonBossSpinCleaveCooldownSeconds = 14
+        # Commander roar: the roar also rallies nearby boss minions and buffs them (Speed + Strength)
+        bloodMoonBossRoarRallyEnabled = true
+        # Grab Toss: seizes and hurls a player who clings in melee too long
+        bloodMoonBossGrabEnabled = true
+        bloodMoonBossGrabCooldownSeconds = 13
+        # Radius in blocks of the altar-anchored battle arena (boss confinement + retargeting)
+        bloodMoonBossArenaRadius = 56
+        # Radius in blocks around the altar where siege spawns are suppressed while the boss is active (usually wider than the arena; boss minions still spawn)
+        bloodMoonBossArenaSuppressRadius = 72
+        # Suppress regular siege spawns inside the suppression radius while the boss is active (boss minions still spawn)
+        bloodMoonBossArenaSuppressSieges = true
+        # Health per second the boss regenerates while the arena is empty and it has returned to the altar (0 disables)
+        bloodMoonBossArenaRegenPerSecond = 2.0
 ```
 
 ### Client Configuration (`config/enjoy_nights-client.toml`)
@@ -158,9 +359,10 @@ All mechanics are 100% customizable:
 
 ## 💬 In-Game Commands
 
-* `/enjoynights info`: Shows current day, lunar phase, night status, and days remaining until the next Blood Moon.
+* `/enjoynights info`: Shows current day, lunar phase, night status, days remaining until the next Blood Moon, and the predicted event for the coming night (Blood Moon, Full Moon, New Moon, or normal night).
 * `/enjoynights bloodmoon start`: *(Operator / Permission level 2)* Forces a Blood Moon siege to start for testing or server events.
 * `/enjoynights bloodmoon stop`: *(Operator / Permission level 2)* Stops the forced Blood Moon.
+* `/enjoynights purge`: *(Operator / Permission level 2)* Immediately force-deletes all event-spawned and empowered mobs across every loaded dimension. Useful for emergency cleanup; the mod already cleans up automatically when events end (`eventMobCleanupEnabled`).
 
 ---
 

@@ -21,6 +21,9 @@ public class EnjoyNightsCommands {
                                         .executes(ctx -> startBloodMoon(ctx.getSource())))
                                 .then(Commands.literal("stop")
                                         .executes(ctx -> stopBloodMoon(ctx.getSource()))))
+                        .then(Commands.literal("purge")
+                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .executes(ctx -> purgeLingeringMobs(ctx.getSource())))
         );
     }
 
@@ -50,6 +53,23 @@ public class EnjoyNightsCommands {
         source.sendSuccess(() -> Component.literal("Luna de Sangre activa: " + (isBloodMoon ? "SÍ" : "NO")).withStyle(isBloodMoon ? ChatFormatting.RED : ChatFormatting.GRAY), false);
         source.sendSuccess(() -> Component.literal("Días hasta próxima Luna de Sangre: " + daysUntilBloodMoon).withStyle(ChatFormatting.WHITE), false);
 
+        // Prediction of tonight's lunar event (useful while it is still daytime)
+        int tonightPhase = NightAndMoonHelper.getMoonPhaseForDay(day);
+        boolean tonightBloodMoon = NightAndMoonHelper.isBloodMoonDayNumber(level, day);
+        String tonightLabel;
+        if (tonightBloodMoon) {
+            tonightLabel = "Luna de Sangre (Blood Moon)";
+        } else if (tonightPhase == NightAndMoonHelper.MOON_PHASE_FULL) {
+            tonightLabel = "Luna Llena (Full Moon)";
+        } else if (tonightPhase == NightAndMoonHelper.MOON_PHASE_NEW) {
+            tonightLabel = "Luna Nueva (New Moon)";
+        } else {
+            tonightLabel = "Noche normal";
+        }
+        final String tonight = tonightLabel;
+        source.sendSuccess(() -> Component.literal("Evento de esta noche: " + tonight)
+                .withStyle(tonightBloodMoon ? ChatFormatting.RED : ChatFormatting.LIGHT_PURPLE), false);
+
         return 1;
     }
 
@@ -63,5 +83,16 @@ public class EnjoyNightsCommands {
         NightAndMoonHelper.setForceBloodMoon(false);
         source.sendSuccess(() -> Component.literal("Luna de Sangre forzada desactivada.").withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    private static int purgeLingeringMobs(CommandSourceStack source) {
+        int totalPurged = 0;
+        for (ServerLevel level : source.getServer().getAllLevels()) {
+            totalPurged += com.coderdiaz.enjoynights.event.BloodMoonEvents.purgeNightMobs(level, true);
+        }
+        final int count = totalPurged;
+        source.sendSuccess(() -> Component.translatable("enjoy_nights.command.purge_success", count)
+                .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD), true);
+        return totalPurged;
     }
 }

@@ -27,6 +27,15 @@ public class EnjoyNights {
     public EnjoyNights(IEventBus modEventBus, ModContainer modContainer) {
         LOGGER.info("Initializing Enjoy nights! for Minecraft 1.21.11 / NeoForge 21.11.45...");
 
+        // Register Deferred Registers
+        com.coderdiaz.enjoynights.init.ModBlocks.BLOCKS.register(modEventBus);
+        com.coderdiaz.enjoynights.init.ModItems.ITEMS.register(modEventBus);
+        com.coderdiaz.enjoynights.init.ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        com.coderdiaz.enjoynights.init.ModMenuTypes.MENUS.register(modEventBus);
+
+        // Register Creative Tab Contents
+        modEventBus.addListener(this::addCreative);
+
         // Register Configs
         modContainer.registerConfig(ModConfig.Type.SERVER, EnjoyNightsConfig.SERVER_SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, EnjoyNightsConfig.CLIENT_SPEC);
@@ -45,9 +54,24 @@ public class EnjoyNights {
         // Register Client Events
         if (FMLEnvironment.getDist().isClient()) {
             NeoForge.EVENT_BUS.register(ClientEvents.class);
+            modEventBus.addListener(this::registerScreens);
         }
 
         LOGGER.info("Enjoy nights! initialized successfully.");
+    }
+
+    private void addCreative(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == net.minecraft.world.item.CreativeModeTabs.FUNCTIONAL_BLOCKS) {
+            event.accept(com.coderdiaz.enjoynights.init.ModItems.WARDING_TOTEM.get());
+            event.accept(com.coderdiaz.enjoynights.init.ModItems.CRIMSON_ALTAR.get());
+        }
+    }
+
+    private void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
+        event.register(
+                com.coderdiaz.enjoynights.init.ModMenuTypes.WARDING_TOTEM.get(),
+                com.coderdiaz.enjoynights.client.gui.WardingTotemScreen::new
+        );
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
