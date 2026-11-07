@@ -19,7 +19,8 @@ public class BloodMoonSiegeTargetGoal extends NearestAttackableTargetGoal<Player
         super(zombie, Player.class, 10, false, false, null);
         this.zombie = zombie;
         // Explicitly configure targeting conditions to ignore line of sight during Blood Moon
-        this.targetConditions = TargetingConditions.forCombat()
+        // (targetConditions is final since 26.x, but TargetingConditions is mutable)
+        this.targetConditions
                 .range(32.0)
                 .ignoreLineOfSight();
     }

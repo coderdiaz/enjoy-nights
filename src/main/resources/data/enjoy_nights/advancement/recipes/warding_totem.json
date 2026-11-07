@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "enjoy_nights:warding_totem"
+        "recipes": ["enjoy_nights:warding_totem"]
       },
       "trigger": "minecraft:recipe_unlocked"
     }

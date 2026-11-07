@@ -3,7 +3,7 @@ package com.coderdiaz.enjoynights.client;
 import com.coderdiaz.enjoynights.config.EnjoyNightsConfig;
 import com.coderdiaz.enjoynights.util.NightAndMoonHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -102,7 +102,7 @@ public class ClientEvents {
 
         // Screen vignette overlay: smooth circular cinematic vignette with breathing heartbeat pulse
         if (EnjoyNightsConfig.CLIENT.bloodMoonScreenVignette.get() && NightAndMoonHelper.isBloodMoon(level)) {
-            GuiGraphics graphics = event.getGuiGraphics();
+            GuiGraphicsExtractor graphics = event.getGuiGraphics();
             int width = graphics.guiWidth();
             int height = graphics.guiHeight();
 
@@ -372,7 +372,7 @@ public class ClientEvents {
                         // Match step sound to the floor material (wood on wood, grass on grass, etc.)
                         BlockPos groundPos = BlockPos.containing(sx, sy - 0.2, sz);
                         BlockState state = level.getBlockState(groundPos);
-                        if (state.isAir() || !state.blocksMotion()) {
+                        if (state.isAir() || state.getCollisionShape(level, groundPos).isEmpty()) {
                             groundPos = player.blockPosition().below();
                             state = level.getBlockState(groundPos);
                         }

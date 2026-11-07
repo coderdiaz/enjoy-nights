@@ -1,6 +1,5 @@
 package com.coderdiaz.enjoynights.util;
 
-import com.coderdiaz.enjoynights.entity.BloodMoonBossManager;
 import com.coderdiaz.enjoynights.event.LunarPhaseEvents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +18,7 @@ import net.minecraft.world.level.Level;
  * (Full Moon / Blood Moon). A single implementation is shared by the end-of-event
  * sweep and the chunk-load handler so both behave identically.
  *
- * <p>Event-spawned mobs ({@code extra_spawn}, {@code fire_skeleton}, boss) are
+ * <p>Event-spawned mobs ({@code extra_spawn}, {@code fire_skeleton}) are
  * deleted, because they only exist as a consequence of the event. Naturally-spawned
  * mobs that were merely empowered ({@code powered}) are normalized instead of
  * deleted, preserving legitimate world population.
@@ -57,38 +56,21 @@ public final class EventMobCleanup {
      * Evaluates a single mob and applies the correct lifecycle action.
      *
      * @param mob        the mob to evaluate
-     * @param bossActive whether a Blood Moon boss battle is currently in progress
-     *                   (an active boss is owned by {@link BloodMoonBossManager} and
-     *                   must not be deleted here)
      * @param forceDelete when true, empowered mobs are deleted outright instead of
      *                    being un-buffed (used by the admin purge command)
      * @return the action that was taken
      */
-    public static Action cleanupTaggedMob(Mob mob, boolean bossActive, boolean forceDelete) {
+    public static Action cleanupTaggedMob(Mob mob, boolean forceDelete) {
         if (mob == null || !mob.isAlive()) {
             return Action.NONE;
         }
 
-        boolean isBoss = mob.getTags().contains(BloodMoonBossManager.TAG_BOSS);
-        boolean isExtraSpawn = mob.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
-        boolean isFireSkeleton = mob.getTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
-        boolean isPowered = mob.getTags().contains(LunarPhaseEvents.TAG_POWERED_MOB);
+        boolean isExtraSpawn = mob.entityTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+        boolean isFireSkeleton = mob.entityTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
+        boolean isPowered = mob.entityTags().contains(LunarPhaseEvents.TAG_POWERED_MOB);
 
         // Event-spawned mobs only exist because of the event: always delete.
         if (isExtraSpawn || isFireSkeleton) {
-            // A live boss keeps its summoned minions until it is resolved elsewhere.
-            if (isBoss && bossActive) {
-                return Action.NONE;
-            }
-            discardWithDeathEffect(mob);
-            return Action.DELETED;
-        }
-
-        if (isBoss) {
-            // Boss lifecycle is managed by BloodMoonBossManager; never touch an active boss.
-            if (bossActive) {
-                return Action.NONE;
-            }
             discardWithDeathEffect(mob);
             return Action.DELETED;
         }

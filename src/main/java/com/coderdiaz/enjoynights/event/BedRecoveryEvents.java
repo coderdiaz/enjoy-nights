@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.util.ClockAdjustment;
 import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.SleepFinishedTimeEvent;
@@ -31,10 +32,9 @@ public class BedRecoveryEvents {
             event.setProblem(Player.BedSleepingProblem.OTHER_PROBLEM);
             long remainingSeconds = (cooldownTicks - (currentTick - lastRest) + 19) / 20;
 
-            player.displayClientMessage(
+            player.sendOverlayMessage(
                     Component.translatable("enjoy_nights.bed.cooldown", remainingSeconds)
-                            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD),
-                    true
+                            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
             );
         }
     }
@@ -42,10 +42,8 @@ public class BedRecoveryEvents {
     @SubscribeEvent
     public static void onSleepFinishedTime(SleepFinishedTimeEvent event) {
         if (EnjoyNightsConfig.SERVER.preventNightSkip.get()) {
-            // Prevent daylight advancement by setting wake-up time to current dayTime
-            if (event.getLevel() instanceof net.minecraft.world.level.Level level) {
-                event.setTimeAddition(level.getDayTime());
-            }
+            // Prevent the clock from advancing: replace the default wake-up adjustment with a zero-tick one
+            event.setAdjustment(new ClockAdjustment.Relative(0L));
         }
     }
 

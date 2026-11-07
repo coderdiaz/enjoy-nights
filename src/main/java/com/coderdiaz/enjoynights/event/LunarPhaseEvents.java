@@ -66,7 +66,7 @@ public class LunarPhaseEvents {
 
             // Controlled extra natural mob spawn during Blood Moon
             if (isBloodMoon && EnjoyNightsConfig.SERVER.bloodMoonExtraSpawnsEnabled.get()) {
-                if (event.getSpawnType() == EntitySpawnReason.NATURAL && !monster.getTags().contains(TAG_EXTRA_SPAWN)) {
+                if (event.getSpawnType() == EntitySpawnReason.NATURAL && !monster.entityTags().contains(TAG_EXTRA_SPAWN)) {
                     double extraChance = EnjoyNightsConfig.SERVER.bloodMoonExtraNaturalSpawnChance.get();
                     if (random.nextFloat() < extraChance && event.getLevel() instanceof ServerLevel serverLevel) {
                         AABB box = monster.getBoundingBox().inflate(16.0);
@@ -82,7 +82,7 @@ public class LunarPhaseEvents {
                                 // Cave Spider ambusher; otherwise it mirrors the source mob.
                                 boolean asCaveSpider = random.nextDouble() < EnjoyNightsConfig.SERVER.bloodMoonCaveSpiderChance.get();
                                 Mob companion = asCaveSpider
-                                        ? net.minecraft.world.entity.EntityType.CAVE_SPIDER.create(serverLevel, EntitySpawnReason.NATURAL)
+                                        ? net.minecraft.world.entity.EntityTypes.CAVE_SPIDER.create(serverLevel, EntitySpawnReason.NATURAL)
                                         : (Mob) monster.getType().create(serverLevel, EntitySpawnReason.NATURAL);
                                 if (companion != null) {
                                     companion.setPos(companionPos.getX() + 0.5, (double) companionPos.getY(), companionPos.getZ() + 0.5);
@@ -106,7 +106,7 @@ public class LunarPhaseEvents {
             // Suppressed on Blood Moon nights, where witches arrive via siege waves.
             if (isFullMoon && !isBloodMoon
                     && event.getSpawnType() == EntitySpawnReason.NATURAL
-                    && !monster.getTags().contains(TAG_EXTRA_SPAWN)
+                    && !monster.entityTags().contains(TAG_EXTRA_SPAWN)
                     && random.nextDouble() < EnjoyNightsConfig.SERVER.fullMoonWitchChance.get()
                     && event.getLevel() instanceof ServerLevel serverLevel) {
                 AABB witchBox = monster.getBoundingBox().inflate(24.0);
@@ -117,7 +117,7 @@ public class LunarPhaseEvents {
                     BlockPos witchPos = monster.blockPosition().offset(
                             random.nextInt(5) - 2, 0, random.nextInt(5) - 2);
                     if (serverLevel.getBlockState(witchPos).isAir()) {
-                        Mob witch = net.minecraft.world.entity.EntityType.WITCH.create(serverLevel, EntitySpawnReason.NATURAL);
+                        Mob witch = net.minecraft.world.entity.EntityTypes.WITCH.create(serverLevel, EntitySpawnReason.NATURAL);
                         if (witch != null) {
                             witch.setPos(witchPos.getX() + 0.5, (double) witchPos.getY(), witchPos.getZ() + 0.5);
                             witch.setYRot(random.nextFloat() * 360f);
@@ -195,7 +195,7 @@ public class LunarPhaseEvents {
 
         // Flame Skeletons in Blood Moon (chance to shoot flaming arrows)
         if (isBloodMoon && monster instanceof net.minecraft.world.entity.monster.skeleton.AbstractSkeleton skeleton
-                && !skeleton.getTags().contains(TAG_FIRE_SKELETON)) {
+                && !skeleton.entityTags().contains(TAG_FIRE_SKELETON)) {
             double flameChance = EnjoyNightsConfig.SERVER.bloodMoonFlameSkeletonChance.get();
             if (random.nextFloat() < flameChance) {
                 skeleton.addTag(TAG_FIRE_SKELETON);
@@ -219,7 +219,7 @@ public class LunarPhaseEvents {
         }
 
         Level level = monster.level();
-        boolean isPowered = monster.getTags().contains(TAG_POWERED_MOB);
+        boolean isPowered = monster.entityTags().contains(TAG_POWERED_MOB);
         boolean isFullMoon = NightAndMoonHelper.isFullMoon(level);
         boolean isBloodMoon = NightAndMoonHelper.isBloodMoon(level);
 
@@ -233,7 +233,7 @@ public class LunarPhaseEvents {
     public static void onArrowSpawn(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow) {
             if (arrow.getOwner() instanceof net.minecraft.world.entity.LivingEntity shooter) {
-                if (shooter.getTags().contains(TAG_FIRE_SKELETON)) {
+                if (shooter.entityTags().contains(TAG_FIRE_SKELETON)) {
                     arrow.igniteForSeconds(100);
                 }
             }
@@ -242,7 +242,7 @@ public class LunarPhaseEvents {
 
     @SubscribeEvent
     public static void onLivingDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
-        if (event.getEntity().getTags().contains(TAG_FIRE_SKELETON)) {
+        if (event.getEntity().entityTags().contains(TAG_FIRE_SKELETON)) {
             // Guarantee that flame skeletons never drop any bow or chainmail helmet
             event.getDrops().removeIf(drop -> drop.getItem().is(net.minecraft.world.item.Items.BOW)
                     || drop.getItem().is(net.minecraft.world.item.Items.CHAINMAIL_HELMET));
@@ -250,7 +250,7 @@ public class LunarPhaseEvents {
 
         // Elite Blood Moon Wither Skeletons must never drop a wither skeleton skull, so
         // the only legitimate source remains hunting them in the Nether.
-        if (event.getEntity().getTags().contains(TAG_WITHER_ELITE)) {
+        if (event.getEntity().entityTags().contains(TAG_WITHER_ELITE)) {
             event.getDrops().removeIf(drop -> drop.getItem().is(net.minecraft.world.item.Items.WITHER_SKELETON_SKULL));
         }
     }
@@ -262,8 +262,8 @@ public class LunarPhaseEvents {
             return;
         }
 
-        boolean isExtraSpawn = mob.getTags().contains(TAG_EXTRA_SPAWN);
-        boolean isFireSkeleton = mob.getTags().contains(TAG_FIRE_SKELETON);
+        boolean isExtraSpawn = mob.entityTags().contains(TAG_EXTRA_SPAWN);
+        boolean isFireSkeleton = mob.entityTags().contains(TAG_FIRE_SKELETON);
 
         if (isExtraSpawn || isFireSkeleton) {
             // If daytime has arrived, immediately force despawn of these night mobs

@@ -4,6 +4,21 @@ All notable changes, features, bug fixes, and vanilla mechanical overrides for *
 
 ---
 
+## [Unreleased]
+
+### Removed
+* **Blood Moon Zenith Boss and Crimson Altar:** The boss, its AI, the Crimson Altar block/item/recipe, and the whole `blood_moon_boss` config section were removed. Blood Moon sieges, the Warding Totem and all other features are unchanged.
+
+### Fixed
+* Advancement `recipe_unlocked` criteria now use the `recipes` key required by 26.3.
+
+### Changed
+* **Minecraft 26.3 / NeoForge 26.3.0.45-beta support:** Ported from Minecraft 1.21.11 (NeoForge 21.11). Requires **Java 25**, Gradle 9.5 and ModDevGradle 2.0.148 to build.
+* Server settings are now registered as a `SYNCED` config (the `SERVER` config type was removed from NeoForge), so the file is named `enjoy_nights-synced.toml` instead of `enjoy_nights-server.toml`. Re-apply any custom server settings.
+* Warding Totem data is now stored as `enjoy_nights:wards` (saved data ids are namespaced identifiers); wards saved by 1.2.0 are not migrated automatically.
+
+---
+
 ## [1.2.0] - 2026-09-20
 
 ### Added

@@ -64,10 +64,9 @@ public class BedSleepHelper {
                 SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.7f, 1.4f);
 
         // Notify player
-        player.displayClientMessage(
+        player.sendOverlayMessage(
                 Component.translatable("enjoy_nights.bed.rest_message")
-                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD),
-                true
+                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
         );
     }
 }

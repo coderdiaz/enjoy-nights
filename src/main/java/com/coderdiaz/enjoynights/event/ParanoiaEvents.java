@@ -80,10 +80,9 @@ public class ParanoiaEvents {
                     tracker.soundCooldown = 100 + player.getRandom().nextInt(100);
 
                     // Whisper in actionbar
-                    player.displayClientMessage(
+                    player.sendOverlayMessage(
                             Component.translatable("enjoy_nights.paranoia.whisper")
-                                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC),
-                            true
+                                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC)
                     );
                 } else {
                     tracker.soundCooldown -= 20;

@@ -25,7 +25,7 @@ public class EnjoyNights {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public EnjoyNights(IEventBus modEventBus, ModContainer modContainer) {
-        LOGGER.info("Initializing Enjoy nights! for Minecraft 1.21.11 / NeoForge 21.11.45...");
+        LOGGER.info("Initializing Enjoy nights! for Minecraft 26.3 / NeoForge 26.3.0.45-beta...");
 
         // Register Deferred Registers
         com.coderdiaz.enjoynights.init.ModBlocks.BLOCKS.register(modEventBus);
@@ -37,7 +37,7 @@ public class EnjoyNights {
         modEventBus.addListener(this::addCreative);
 
         // Register Configs
-        modContainer.registerConfig(ModConfig.Type.SERVER, EnjoyNightsConfig.SERVER_SPEC);
+        modContainer.registerConfig(ModConfig.Type.SYNCED, EnjoyNightsConfig.SERVER_SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, EnjoyNightsConfig.CLIENT_SPEC);
 
         // Register Common Gameplay Events to NeoForge Event Bus
@@ -63,7 +63,6 @@ public class EnjoyNights {
     private void addCreative(net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == net.minecraft.world.item.CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(com.coderdiaz.enjoynights.init.ModItems.WARDING_TOTEM.get());
-            event.accept(com.coderdiaz.enjoynights.init.ModItems.CRIMSON_ALTAR.get());
         }
     }
 

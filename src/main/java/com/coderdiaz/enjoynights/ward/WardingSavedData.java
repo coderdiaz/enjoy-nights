@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -19,7 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WardingSavedData extends SavedData {
-    public static final String DATA_NAME = "enjoy_nights_wards";
+    public static final Identifier DATA_NAME = Identifier.fromNamespaceAndPath("enjoy_nights", "wards");
 
     public record WardEntry(BlockPos pos, UUID owner, String ownerName, long timestamp) {}
 

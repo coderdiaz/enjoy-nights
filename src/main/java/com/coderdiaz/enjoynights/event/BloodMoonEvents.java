@@ -1,7 +1,6 @@
 package com.coderdiaz.enjoynights.event;
 
 import com.coderdiaz.enjoynights.config.EnjoyNightsConfig;
-import com.coderdiaz.enjoynights.entity.BloodMoonBossManager;
 import com.coderdiaz.enjoynights.entity.ai.ZombieSiegeBreakGoal;
 import com.coderdiaz.enjoynights.util.NightAndMoonHelper;
 import com.coderdiaz.enjoynights.ward.WardingSavedData;
@@ -17,6 +16,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.zombie.Zombie;
@@ -63,9 +63,8 @@ public class BloodMoonEvents {
 
         // Cleanup check for lingering night mobs loading from chunks
         if (event.getEntity() instanceof Mob mob) {
-            boolean hasExtraTag = mob.getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
-            boolean hasFireSkeleton = mob.getTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
-            boolean hasBossTag = mob.getTags().contains(BloodMoonBossManager.TAG_BOSS);
+            boolean hasExtraTag = mob.entityTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN);
+            boolean hasFireSkeleton = mob.entityTags().contains(LunarPhaseEvents.TAG_FIRE_SKELETON);
 
             if (hasExtraTag || hasFireSkeleton) {
                 // If daytime has arrived or if outside Blood Moon for extra siege mobs, discard immediately!
@@ -73,17 +72,6 @@ public class BloodMoonEvents {
                     mob.discard();
                     event.setCanceled(true);
                     return;
-                }
-            }
-
-            if (hasBossTag) {
-                // If chunk is loading during daytime or outside Blood Moon, discard lingering boss immediately!
-                if (!NightAndMoonHelper.isNight(event.getLevel()) || !NightAndMoonHelper.isBloodMoon(event.getLevel())) {
-                    if (EnjoyNightsConfig.SERVER.bloodMoonBossDespawnAtDawn.get()) {
-                        mob.discard();
-                        event.setCanceled(true);
-                        return;
-                    }
                 }
             }
 
@@ -96,7 +84,7 @@ public class BloodMoonEvents {
                     && !NightAndMoonHelper.isFullMoon(event.getLevel())) {
                 com.coderdiaz.enjoynights.util.EventMobCleanup.Action action =
                         com.coderdiaz.enjoynights.util.EventMobCleanup.cleanupTaggedMob(
-                                mob, BloodMoonBossManager.isBossActive(), false);
+                                mob, false);
                 if (action == com.coderdiaz.enjoynights.util.EventMobCleanup.Action.DELETED) {
                     event.setCanceled(true);
                     return;
@@ -112,21 +100,15 @@ public class BloodMoonEvents {
 
     @SubscribeEvent
     public static void onLivingDamage(net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post event) {
-        if (event.getEntity().getTags().contains(BloodMoonBossManager.TAG_BOSS)) {
-            if (event.getSource().getEntity() instanceof net.minecraft.world.entity.player.Player player) {
-                BloodMoonBossManager.recordPlayerDamage(player.getUUID(), event.getNewDamage());
-            }
-        }
-
         // On-hit status effects from tagged event mobs. Only affect players so
         // event mobs do not debuff each other, and only on the server side.
         if (event.getEntity() instanceof ServerPlayer victim
                 && event.getSource().getEntity() instanceof Mob attacker) {
-            if (attacker.getTags().contains(LunarPhaseEvents.TAG_CAVE_SPIDER)) {
+            if (attacker.entityTags().contains(LunarPhaseEvents.TAG_CAVE_SPIDER)) {
                 int seconds = EnjoyNightsConfig.SERVER.bloodMoonCaveSpiderPoisonSeconds.get();
                 int amplifier = EnjoyNightsConfig.SERVER.bloodMoonCaveSpiderPoisonAmplifier.get();
                 victim.addEffect(new MobEffectInstance(MobEffects.POISON, seconds * 20, amplifier, false, true, true));
-            } else if (attacker.getTags().contains(LunarPhaseEvents.TAG_WITHER_ELITE)) {
+            } else if (attacker.entityTags().contains(LunarPhaseEvents.TAG_WITHER_ELITE)) {
                 // Elite Wither Skeleton inflicts Wither for a short, threatening window.
                 victim.addEffect(new MobEffectInstance(MobEffects.WITHER, 100, 0, false, true, true));
             }
@@ -189,9 +171,6 @@ public class BloodMoonEvents {
             siegeWaveTickCounter = 0;
             siegeWaveCounter = 0;
         }
-
-        // Blood Moon Boss cycle (spawns at midnight 18000, freezes time, scales with players, boss bar)
-        BloodMoonBossManager.tick(level);
 
         // Sporadic atmospheric Darkness pulse (torches flicker and darkness closes in for ~1.5s every 2-3 minutes to unnerve player)
         if (isBloodMoon && EnjoyNightsConfig.SERVER.bloodMoonDarknessPulseEnabled.get()) {
@@ -300,19 +279,6 @@ public class BloodMoonEvents {
 
                 BlockPos spawnPos = new BlockPos(spawnX, spawnY, spawnZ);
 
-                // While a boss arena is active, suppress regular siege spawns within the
-                // suppression radius (wider than the battle arena) so the surroundings stay
-                // clear during the fight. The boss still summons its own minions directly.
-                // Spawns resume everywhere once the boss is defeated (anchor cleared).
-                if (EnjoyNightsConfig.SERVER.bloodMoonBossArenaSuppressSieges.get()
-                        && BloodMoonBossManager.isArenaActive()) {
-                    BlockPos anchor = BloodMoonBossManager.getArenaAnchor();
-                    int suppressRadius = BloodMoonBossManager.getSuppressRadius();
-                    if (anchor != null && anchor.distSqr(spawnPos) <= (double) suppressRadius * suppressRadius) {
-                        continue;
-                    }
-                }
-
                 // If inside a ward, relocate to the perimeter outside the base.
                 WardingSavedData.WardEntry ward = WardingSavedData.get(level).findNearestActiveWard(spawnPos, EnjoyNightsConfig.SERVER.wardingTotemRadius.get());
                 if (ward != null) {
@@ -365,18 +331,18 @@ public class BloodMoonEvents {
 
         int total = zombie + caveSpider + skeleton + husk + stray + witch + vindicator + breeze;
         if (total <= 0) {
-            return EntityType.ZOMBIE; // Safe fallback if all weights are zero.
+            return EntityTypes.ZOMBIE; // Safe fallback if all weights are zero.
         }
 
         int roll = random.nextInt(total);
-        if ((roll -= zombie) < 0) return EntityType.ZOMBIE;
-        if ((roll -= caveSpider) < 0) return EntityType.CAVE_SPIDER;
-        if ((roll -= skeleton) < 0) return EntityType.SKELETON;
-        if ((roll -= husk) < 0) return EntityType.HUSK;
-        if ((roll -= stray) < 0) return EntityType.STRAY;
-        if ((roll -= witch) < 0) return EntityType.WITCH;
-        if ((roll -= vindicator) < 0) return EntityType.VINDICATOR;
-        return EntityType.BREEZE;
+        if ((roll -= zombie) < 0) return EntityTypes.ZOMBIE;
+        if ((roll -= caveSpider) < 0) return EntityTypes.CAVE_SPIDER;
+        if ((roll -= skeleton) < 0) return EntityTypes.SKELETON;
+        if ((roll -= husk) < 0) return EntityTypes.HUSK;
+        if ((roll -= stray) < 0) return EntityTypes.STRAY;
+        if ((roll -= witch) < 0) return EntityTypes.WITCH;
+        if ((roll -= vindicator) < 0) return EntityTypes.VINDICATOR;
+        return EntityTypes.BREEZE;
     }
 
     /**
@@ -387,11 +353,11 @@ public class BloodMoonEvents {
                                       int x, int y, int z, ServerPlayer target,
                                       RandomSource random, boolean lateWave) {
         // Rare elite upgrade: a late-wave skeleton slot may instead become an elite
-        // Wither Skeleton (applies Wither on hit). Never tagged as the Crimson boss.
+        // Wither Skeleton (applies Wither on hit).
         boolean elite = false;
-        if (lateWave && type == EntityType.SKELETON
+        if (lateWave && type == EntityTypes.SKELETON
                 && random.nextDouble() < EnjoyNightsConfig.SERVER.bloodMoonWitherSkeletonEliteChance.get()) {
-            type = EntityType.WITHER_SKELETON;
+            type = EntityTypes.WITHER_SKELETON;
             elite = true;
         }
 
@@ -405,7 +371,7 @@ public class BloodMoonEvents {
         mob.setYRot(random.nextFloat() * 360.0F);
         mob.addTag(LunarPhaseEvents.TAG_EXTRA_SPAWN);
 
-        if (type == EntityType.CAVE_SPIDER) {
+        if (type == EntityTypes.CAVE_SPIDER) {
             mob.addTag(LunarPhaseEvents.TAG_CAVE_SPIDER);
         } else if (elite) {
             mob.addTag(LunarPhaseEvents.TAG_WITHER_ELITE);
@@ -432,25 +398,6 @@ public class BloodMoonEvents {
     public static void onCheckSpawn(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck event) {
         if (event.getLevel() instanceof ServerLevel serverLevel) {
             BlockPos pos = event.getEntity().blockPosition();
-
-            // Boss arena: suppress natural spawns inside the suppression radius while a
-            // boss is active. Mobs summoned by the boss (tagged extra-spawn / boss) are
-            // ALWAYS exempt so its reinforcements still appear even though they fall
-            // within the suppression radius — the suppression rule only targets regular
-            // natural/siege spawns. (Boss minions are also added via addFreshEntity, which
-            // does not fire this check; this tag guard is a defensive double-safety.)
-            if (EnjoyNightsConfig.SERVER.bloodMoonBossArenaSuppressSieges.get()
-                    && BloodMoonBossManager.isArenaActive()
-                    && event.getEntity() instanceof Monster
-                    && !event.getEntity().getTags().contains(LunarPhaseEvents.TAG_EXTRA_SPAWN)
-                    && !event.getEntity().getTags().contains(BloodMoonBossManager.TAG_BOSS)) {
-                BlockPos anchor = BloodMoonBossManager.getArenaAnchor();
-                int suppressRadius = BloodMoonBossManager.getSuppressRadius();
-                if (anchor != null && anchor.distSqr(pos) <= (double) suppressRadius * suppressRadius) {
-                    event.setResult(net.neoforged.neoforge.event.entity.living.MobSpawnEvent.PositionCheck.Result.FAIL);
-                    return;
-                }
-            }
 
             WardingSavedData.WardEntry ward = WardingSavedData.get(serverLevel)
                     .findNearestActiveWard(pos, EnjoyNightsConfig.SERVER.wardingTotemRadius.get());
@@ -653,12 +600,11 @@ public class BloodMoonEvents {
      * @return number of entities removed from the world
      */
     public static int purgeNightMobs(ServerLevel level, boolean forceDeletePowered) {
-        boolean bossActive = BloodMoonBossManager.isBossActive();
         int removedCount = 0;
         for (Entity entity : level.getAllEntities()) {
             if (entity instanceof Mob mob && mob.isAlive()) {
                 com.coderdiaz.enjoynights.util.EventMobCleanup.Action action =
-                        com.coderdiaz.enjoynights.util.EventMobCleanup.cleanupTaggedMob(mob, bossActive, forceDeletePowered);
+                        com.coderdiaz.enjoynights.util.EventMobCleanup.cleanupTaggedMob(mob, forceDeletePowered);
                 if (action == com.coderdiaz.enjoynights.util.EventMobCleanup.Action.DELETED) {
                     removedCount++;
                 }
@@ -678,10 +624,9 @@ public class BloodMoonEvents {
         if (!EnjoyNightsConfig.SERVER.eventMobCleanupEnabled.get()) {
             return;
         }
-        boolean bossActive = BloodMoonBossManager.isBossActive();
         for (Entity entity : level.getAllEntities()) {
             if (entity instanceof Mob mob && mob.isAlive()) {
-                com.coderdiaz.enjoynights.util.EventMobCleanup.cleanupTaggedMob(mob, bossActive, false);
+                com.coderdiaz.enjoynights.util.EventMobCleanup.cleanupTaggedMob(mob, false);
             }
         }
     }

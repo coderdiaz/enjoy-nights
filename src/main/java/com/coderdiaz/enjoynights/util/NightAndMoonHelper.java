@@ -1,6 +1,10 @@
 package com.coderdiaz.enjoynights.util;
 
 import com.coderdiaz.enjoynights.config.EnjoyNightsConfig;
+import net.minecraft.core.Holder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.clock.WorldClock;
+import net.minecraft.world.clock.WorldClocks;
 import net.minecraft.world.level.Level;
 
 public class NightAndMoonHelper {
@@ -14,9 +18,18 @@ public class NightAndMoonHelper {
 
     private static boolean forceBloodMoon = false;
 
+    /**
+     * Sets the total ticks of the overworld world clock. Since 26.1 the day time lives in a
+     * {@code WorldClock} managed by the {@code ServerClockManager} instead of {@code ServerLevel#setDayTime}.
+     */
+    public static void setOverworldClockTime(ServerLevel level, long ticks) {
+        Holder<WorldClock> overworldClock = level.registryAccess().getOrThrow(WorldClocks.OVERWORLD);
+        level.clockManager().setTotalTicks(overworldClock, ticks);
+    }
+
     public static boolean isNight(Level level) {
         if (level == null) return false;
-        long timeOfDay = level.getDayTime() % TICKS_PER_DAY;
+        long timeOfDay = level.getOverworldClockTime() % TICKS_PER_DAY;
         return timeOfDay >= DUSK_TIME && timeOfDay <= 23500L;
     }
 
@@ -25,7 +38,7 @@ public class NightAndMoonHelper {
      */
     public static long getTimeOfDay(Level level) {
         if (level == null) return 0;
-        return level.getDayTime() % TICKS_PER_DAY;
+        return level.getOverworldClockTime() % TICKS_PER_DAY;
     }
 
     /**
@@ -70,12 +83,12 @@ public class NightAndMoonHelper {
 
     public static long getDay(Level level) {
         if (level == null) return 0;
-        return level.getDayTime() / TICKS_PER_DAY;
+        return level.getOverworldClockTime() / TICKS_PER_DAY;
     }
 
     public static int getMoonPhase(Level level) {
         if (level == null) return 0;
-        return (int) (level.getDayTime() / TICKS_PER_DAY % 8L + 8L) % 8;
+        return (int) (level.getOverworldClockTime() / TICKS_PER_DAY % 8L + 8L) % 8;
     }
 
     public static boolean isFullMoon(Level level) {

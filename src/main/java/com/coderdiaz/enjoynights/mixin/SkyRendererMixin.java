@@ -4,7 +4,6 @@ import com.coderdiaz.enjoynights.util.NightAndMoonHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SkyRenderer;
 import org.joml.Vector4f;
-import org.joml.Vector4fc;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
@@ -16,11 +15,11 @@ public class SkyRendererMixin {
             method = "renderMoon",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"
+                    target = "Lnet/minecraft/client/renderer/DynamicGpuData;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Vector4f;)Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;"
             ),
             index = 1
     )
-    private Vector4fc enjoynights$tintMoonRed(Vector4fc color) {
+    private Vector4f enjoynights$tintMoonRed(Vector4f color) {
         if (NightAndMoonHelper.isBloodMoon(Minecraft.getInstance().level)) {
             // Subtle, atmospheric crimson tint for Blood Moon:
             // R=1.0, G=0.35, B=0.35 preserves crater contrast while casting a sinister red hue over the moon

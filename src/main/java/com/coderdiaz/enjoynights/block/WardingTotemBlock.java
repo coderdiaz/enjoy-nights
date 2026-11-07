@@ -1,7 +1,6 @@
 package com.coderdiaz.enjoynights.block;
 
 import com.coderdiaz.enjoynights.block.entity.WardingTotemBlockEntity;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -28,17 +27,11 @@ import java.util.Collections;
 import java.util.List;
 
 public class WardingTotemBlock extends BaseEntityBlock {
-    public static final MapCodec<WardingTotemBlock> CODEC = simpleCodec(WardingTotemBlock::new);
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
 
     public WardingTotemBlock(BlockBehaviour.Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(ACTIVE, false));
-    }
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
     }
 
     @Override
@@ -79,10 +72,10 @@ public class WardingTotemBlock extends BaseEntityBlock {
             boolean isOp = player instanceof net.minecraft.server.level.ServerPlayer sp &&
                     net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS).test(sp.createCommandSourceStack());
             if (totem.isActive() && totem.getOwner() != null && !totem.getOwner().equals(player.getUUID()) && !isOp) {
-                player.displayClientMessage(Component.translatable(
+                player.sendSystemMessage(Component.translatable(
                         "enjoy_nights.ward.not_owner",
                         totem.getOwnerName()
-                ).withStyle(ChatFormatting.RED), false);
+                ).withStyle(ChatFormatting.RED));
                 return InteractionResult.CONSUME;
             }
 

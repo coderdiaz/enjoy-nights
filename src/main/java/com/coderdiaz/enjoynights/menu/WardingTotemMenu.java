@@ -10,6 +10,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Prediction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
@@ -131,22 +132,22 @@ public class WardingTotemMenu extends AbstractContainerMenu {
                 WardingSavedData savedData = WardingSavedData.get(serverLevel);
                 WardingSavedData.WardEntry existing = savedData.getActiveWardForPlayer(player.getUUID());
                 if (existing != null && !existing.pos().equals(blockPos)) {
-                    player.displayClientMessage(Component.translatable(
+                    player.sendSystemMessage(Component.translatable(
                             "enjoy_nights.ward.already_active",
                             existing.pos().getX(),
                             existing.pos().getY(),
                             existing.pos().getZ()
-                    ).withStyle(ChatFormatting.RED), false);
+                    ).withStyle(ChatFormatting.RED));
                     return false;
                 }
 
                 int required = EnjoyNightsConfig.SERVER.wardingTotemAmethystCost.get();
                 ItemStack slotStack = container.getItem(0);
                 if (slotStack.isEmpty() || !slotStack.is(Items.AMETHYST_SHARD) || slotStack.getCount() < required) {
-                    player.displayClientMessage(Component.translatable(
+                    player.sendSystemMessage(Component.translatable(
                             "enjoy_nights.ward.need_amethysts",
                             required
-                    ).withStyle(ChatFormatting.RED), false);
+                    ).withStyle(ChatFormatting.RED));
                     return false;
                 }
 
@@ -161,20 +162,20 @@ public class WardingTotemMenu extends AbstractContainerMenu {
                 savedData.registerWard(blockPos, player.getUUID(), player.getScoreboardName());
 
                 serverLevel.playSound(null, blockPos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 1.0f);
-                player.displayClientMessage(Component.translatable(
+                player.sendSystemMessage(Component.translatable(
                         "enjoy_nights.ward.activated",
                         EnjoyNightsConfig.SERVER.wardingTotemRadius.get()
-                ).withStyle(ChatFormatting.AQUA), false);
+                ).withStyle(ChatFormatting.AQUA));
                 return true;
             } else {
                 // Deactivate
                 boolean isOp = player instanceof net.minecraft.server.level.ServerPlayer sp &&
                         net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS).test(sp.createCommandSourceStack());
                 if (blockEntity.getOwner() != null && !blockEntity.getOwner().equals(player.getUUID()) && !isOp) {
-                    player.displayClientMessage(Component.translatable(
+                    player.sendSystemMessage(Component.translatable(
                             "enjoy_nights.ward.not_owner",
                             blockEntity.getOwnerName()
-                    ).withStyle(ChatFormatting.RED), false);
+                    ).withStyle(ChatFormatting.RED));
                     return false;
                 }
 
@@ -193,11 +194,11 @@ public class WardingTotemMenu extends AbstractContainerMenu {
 
                 ItemStack refundStack = new ItemStack(Items.AMETHYST_SHARD, refundCount);
                 if (!player.getInventory().add(refundStack)) {
-                    player.drop(refundStack, false);
+                    player.drop(refundStack, false, Prediction.SERVER_ONLY);
                 }
 
                 serverLevel.playSound(null, blockPos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.0f, 1.0f);
-                player.displayClientMessage(Component.translatable("enjoy_nights.ward.deactivated").withStyle(ChatFormatting.YELLOW), false);
+                player.sendSystemMessage(Component.translatable("enjoy_nights.ward.deactivated").withStyle(ChatFormatting.YELLOW));
                 return true;
             }
         }

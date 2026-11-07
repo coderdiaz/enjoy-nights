@@ -182,7 +182,7 @@ public class ZombieSiegeBreakGoal extends Goal {
 
         // Visual arm swing and hit sounds
         if (this.breakTime % 15 == 0) {
-            this.zombie.swing(InteractionHand.MAIN_HAND);
+            this.zombie.swingForAttack(InteractionHand.MAIN_HAND);
             if (state.is(BlockTags.WOODEN_DOORS)) {
                 // Vanilla door hit event (1019 = zombie attacks door)
                 level.levelEvent(1019, this.targetBlockPos, 0);
