@@ -2,7 +2,7 @@
 
 **Transform your Minecraft nights from something you skip into an intense, rewarding, and atmospheric survival experience.**
 
-Tired of players instantly skipping the night with a bed? Annoyed by annoying Phantoms? Want the moon phases to actually matter and fear the dark again? **Enjoy Nights!** reworks night mechanics with tactical bed resting, dynamic lunar phases, mineral drops, dark area paranoia, craftable base defenses, escalating Blood Moon sieges where monsters break down your doors, and a ritual-summoned Blood Moon boss!
+Tired of players instantly skipping the night with a bed? Annoyed by annoying Phantoms? Want the moon phases to actually matter and fear the dark again? **Enjoy Nights!** reworks night mechanics with tactical bed resting, dynamic lunar phases, mineral drops, dark area paranoia, craftable base defenses, escalating Blood Moon sieges where monsters break down your doors!
 
 ---
 
@@ -72,14 +72,6 @@ Tired of players instantly skipping the night with a bed? Annoyed by annoying Ph
 * Craftable **Warding Totem** that protects a **100-block radius**. Monsters attempting to spawn inside are relocated to the perimeter instead of being deleted.
 * Activated by depositing **8 Amethyst Shards** via its GUI, binding it to your UUID. One active totem per player; safe deactivation refunds the shards. It is the only safe haven during a Blood Moon.
 
-### ☠️ Blood Moon Zenith Boss (*El Heraldo Carmesí*) & Crimson Altar
-* **Crimson Altar Ritual:** Summon the boss by crafting and placing the **Crimson Altar** on the surface during a Blood Moon night. The altar can only be placed in the **Overworld**, only drops when mined with a **diamond pickaxe or better**, stays **inert** (and recoverable) if placed outside a Blood Moon, and becomes **indestructible** once the ritual begins. It emits faint crimson particles at night while awaiting a Blood Moon.
-* **Boss Arena:** The altar is not consumed on summon — it stays as an indestructible anchor marking a **56-block battle arena** around it. While the boss lives, regular siege mobs stop spawning in a wider **72-block radius** around the altar (only the boss's own reinforcements appear), so you face the boss without a pile-on. The boss **cannot be lured out** of the battle arena: run too far and it switches to another player still inside the radius. If everyone leaves, the boss returns to the altar and **slowly regenerates health** while it waits — fleeing only resets your progress. The altar is **consumed the instant the boss is defeated or eliminated** (with a triumphant burst), and normal mob spawning resumes immediately — so a well-geared team that kills it fast is not left in a dead zone.
-* **Dynamic Scaling:** Boss health scales with nearby players (with diminishing returns for large groups) while keeping damage fair; an on-screen boss bar tracks the fight.
-* **Elden Ring-style Moveset:** A true colossus — it shakes the ground with heavy footsteps and its strikes land as weighty overhead slams, not thin sword sweeps. Telegraphed cleave, charged lunge, ground shockwave, repulsion wave, and a committed **directed leap** that lands on a targeted player and unleashes a dispersal shockwave to scatter the group. New moves add real variety: a **Stomp** that punishes players hugging its legs, a dodgeable **Wither Skull volley** at range, telegraphed **Soul Fire Pillars** that erupt under marked ground after a brief warning, a **Spin Cleave** that sweeps all around it and shoves the group out, and a **Grab Toss** that seizes and hurls anyone who face-tanks it too long. Its roar also rallies and buffs its own minions like a commander. Heavy moves have punish windows, a readable rhythm, and no longer chain their knockbacks. Melee hits have a chance (not a guarantee) to inflict Wither. Phase 2 "Furia del Eclipse" activates below 40% HP. Every new attack is individually configurable.
-* **Reinforcements:** At 75%, 50%, and 25% health the boss summons minions. Most are fiery skeletons and armored zombies, but rarer illager specialists appear too — a **10% chance for a Vindicator** and a **5% chance for an Evoker** per minion. These are always exempt from the arena spawn suppression, so the boss's own backup always arrives.
-* **Dawn Despawn:** If not defeated before the Blood Moon ends, the boss fades away **without dropping rewards**. Victory grants XP, Diamonds, Emeralds, Amethyst Shards, and a Totem of Undying.
-
 ### 🧹 Event Mob Cleanup (Performance)
 * When a lunar event ends, event-spawned mobs are removed and empowered natural mobs are reverted to normal — regardless of location — preventing entity buildup. Lingering/legacy event mobs are also cleaned when their chunk reloads. The Blood Moon only affects players in the Overworld.
 
@@ -87,7 +79,7 @@ Tired of players instantly skipping the night with a bed? Annoyed by annoying Ph
 
 ## ⚙️ Configuration
 
-Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_nights-client.toml`:
+Fully configurable via `config/enjoy_nights-synced.toml` and `config/enjoy_nights-client.toml`:
 
 ```toml
 [server]
@@ -155,40 +147,6 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
         bloodMoonCaveSpiderPoisonSeconds = 5
         bloodMoonCaveSpiderPoisonAmplifier = 0
 
-    [server.blood_moon_boss]
-        bloodMoonBossEnabled = true
-        bloodMoonBossRequireRitual = true
-        bloodMoonBossBaseHealth = 200.0
-        bloodMoonBossHealthPerPlayer = 60.0
-        bloodMoonBossHealthDiminishAfterPlayers = 1
-        bloodMoonBossHealthDiminishFactor = 0.6
-        bloodMoonBossMaxMinionsPerPhase = 4
-        bloodMoonBossBaseDamage = 11.0
-        bloodMoonBossFreezeDurationSeconds = 600
-        bloodMoonBossDespawnAtDawn = true
-        bloodMoonBossLeapRadius = 6.0
-        bloodMoonBossLeapKnockback = 1.6
-        bloodMoonBossPhase2Enabled = true
-        bloodMoonBossKnockbackMultiplier = 1.0
-        bloodMoonBossMeleeBias = 0.5
-        bloodMoonBossAbilityLockoutTicks = 65
-        bloodMoonBossWitherOnHitChance = 0.25
-        bloodMoonBossStompEnabled = true
-        bloodMoonBossStompCooldownSeconds = 10
-        bloodMoonBossSkullVolleyEnabled = true
-        bloodMoonBossSkullVolleyCooldownSeconds = 11
-        bloodMoonBossSoulPillarsEnabled = true
-        bloodMoonBossSoulPillarsCooldownSeconds = 16
-        bloodMoonBossSpinCleaveEnabled = true
-        bloodMoonBossSpinCleaveCooldownSeconds = 14
-        bloodMoonBossRoarRallyEnabled = true
-        bloodMoonBossGrabEnabled = true
-        bloodMoonBossGrabCooldownSeconds = 13
-        bloodMoonBossArenaRadius = 56
-        bloodMoonBossArenaSuppressRadius = 72
-        bloodMoonBossArenaSuppressSieges = true
-        bloodMoonBossArenaRegenPerSecond = 2.0
-
 [client]
     bloodMoonFogTint = true
     bloodMoonScreenVignette = true
@@ -213,7 +171,7 @@ Fully configurable via `config/enjoy_nights-server.toml` and `config/enjoy_night
 
 ## 💻 Compatibility & Requirements
 
-* **Minecraft:** `1.21.11`
-* **Mod Loader:** `NeoForge 21.11.45+`
+* **Minecraft:** `26.3`
+* **Mod Loader:** `NeoForge 26.3.0.45-beta+`
 * **Side:** Required on **Server**, recommended on **Client** for red fog, screen vignette, ember particles, and atmospheric sound effects.
 * **Shaders:** Fully compatible with shaders including **Complementary Unbound**, **Iris**, **Sodium / Embeddium**, and Vanilla.
